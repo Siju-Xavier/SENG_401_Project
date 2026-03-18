@@ -173,7 +173,7 @@ MonoBehaviour:
   autoUpdate: 1
   regions:
   - name: Water
-    height: 0.2
+    height: 0.3
     color: {r: 0, g: 0.13319114, b: 0.4641509, a: 1}
   - name: Forest
     height: 0.6
@@ -184,6 +184,7 @@ MonoBehaviour:
   - name: Mountain
     height: 1
     color: {r: 0.2754717, g: 0.2754717, b: 0.2754717, a: 0}
+  biomes: []
 --- !u!4 &817334158
 Transform:
   m_ObjectHideFlags: 0

@@ -16,6 +16,6 @@ MonoBehaviour:
   baseMoisture: 0
   defaultSprite: {fileID: 0}
   burningSprite: {fileID: 0}
-  defaultTile: {fileID: 0}
+  defaultTile: {fileID: 11400000, guid: 11cf3d810b2d14bc4bb786607a6a159b, type: 2}
   burningTile: {fileID: 0}
-  maxHeight: 0
+  maxHeight: 0.4

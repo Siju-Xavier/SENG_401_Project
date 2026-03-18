@@ -116,12 +116,11 @@ namespace BusinessLogic.MapGeneration
 
         private void GenerateRegions()
         {
-            // Initialize the grid system
+            // Use existing GridSystem or add one to this GameObject
             gridSystem = FindFirstObjectByType<GridSystem>();
             if (gridSystem == null)
             {
-                var go = new GameObject("GridSystem");
-                gridSystem = go.AddComponent<GridSystem>();
+                gridSystem = gameObject.AddComponent<GridSystem>();
             }
             gridSystem.Initialize(mapWidth, mapHeight);
 

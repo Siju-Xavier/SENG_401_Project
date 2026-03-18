@@ -22,7 +22,12 @@ namespace Presentation.MapGeneration
         {
             // Clean up old cities if regenerating
             if (cityContainer != null)
-                DestroyImmediate(cityContainer);
+            {
+                if (Application.isPlaying)
+                    Destroy(cityContainer);
+                else
+                    DestroyImmediate(cityContainer);
+            }
 
             cityContainer = new GameObject("Cities");
             cityContainer.transform.SetParent(transform);

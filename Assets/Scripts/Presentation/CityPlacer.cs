@@ -18,16 +18,29 @@ namespace Presentation.MapGeneration
 
         private GameObject cityContainer;
 
-        public void PlaceCities(GridSystem gridSystem)
+        public void ClearCities()
         {
-            // Clean up old cities if regenerating
+            // Destroy tracked container
             if (cityContainer != null)
             {
-                if (Application.isPlaying)
-                    Destroy(cityContainer);
-                else
-                    DestroyImmediate(cityContainer);
+                if (Application.isPlaying) Destroy(cityContainer);
+                else DestroyImmediate(cityContainer);
+                cityContainer = null;
             }
+
+            // Also destroy any leftover Cities objects from previous editor sessions
+            while (true)
+            {
+                var leftover = transform.Find("Cities");
+                if (leftover == null) break;
+                if (Application.isPlaying) Destroy(leftover.gameObject);
+                else DestroyImmediate(leftover.gameObject);
+            }
+        }
+
+        public void PlaceCities(GridSystem gridSystem)
+        {
+            ClearCities();
 
             cityContainer = new GameObject("Cities");
             cityContainer.transform.SetParent(transform);

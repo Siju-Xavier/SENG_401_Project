@@ -49,6 +49,11 @@ namespace BusinessLogic.MapGeneration
         public float[,] NoiseMap => noiseMap;
         public GridSystem GridSystem => gridSystem;
 
+        private void Start()
+        {
+            GenerateMap();
+        }
+
         public void GenerateMap()
         {
             // 1. Generate the raw 0-1 noise map

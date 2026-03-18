@@ -9,8 +9,24 @@ namespace Presentation
     public class CameraController : MonoBehaviour
     {
         [SerializeField] private float moveSpeed = 20f;
+        [SerializeField] private float zoomSpeed = 5f;
+        [SerializeField] private float minZoom = 2f;
+        [SerializeField] private float maxZoom = 20f;
+
+        private Camera cam;
+
+        private void Awake()
+        {
+            cam = Camera.main;
+        }
 
         private void Update()
+        {
+            HandleMovement();
+            HandleZoom();
+        }
+
+        private void HandleMovement()
         {
             Keyboard kb = Keyboard.current;
             if (kb == null) return;
@@ -35,6 +51,18 @@ namespace Presentation
             pos.y = Mathf.Round(pos.y * ppu) / ppu;
 
             transform.position = pos;
+        }
+
+        private void HandleZoom()
+        {
+            Mouse mouse = Mouse.current;
+            if (mouse == null || cam == null) return;
+
+            float scroll = mouse.scroll.ReadValue().y;
+            if (Mathf.Approximately(scroll, 0f)) return;
+
+            float newSize = cam.orthographicSize - scroll * zoomSpeed * Time.unscaledDeltaTime;
+            cam.orthographicSize = Mathf.Clamp(newSize, minZoom, maxZoom);
         }
     }
 }

@@ -101,3 +101,18 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE TRIGGER save_slot_limit_trigger
     AFTER INSERT ON save_games
     FOR EACH ROW EXECUTE FUNCTION enforce_save_slot_limit();
+
+-- ── 4. REGIONS ───────────────────────────────────────────────────────────────
+-- Maps to Region class (name, list of cities).
+-- A Region belongs to one save; cities within the Region are stored in the
+-- JSONB game_state as well as in city_reputations for leaderboard queries.
+
+CREATE TABLE IF NOT EXISTS regions (
+    id          SERIAL          PRIMARY KEY,
+    player_id   INT             NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    save_id     INT             REFERENCES save_games(id) ON DELETE CASCADE,
+    name        TEXT            NOT NULL    -- Region.name
+);
+
+CREATE INDEX IF NOT EXISTS idx_regions_player_id ON regions(player_id);
+CREATE INDEX IF NOT EXISTS idx_regions_save_id   ON regions(save_id);

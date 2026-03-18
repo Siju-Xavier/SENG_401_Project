@@ -12,6 +12,7 @@ Builds/
 Logs/
 MemoryCaptures/
 UserSettings/
+Packages/
 
 # AssetStoreTools
 /[Aa]ssets/AssetStoreTools*

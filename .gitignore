@@ -55,6 +55,7 @@ sysinfo.txt
 crashlytics-build.properties
 
 # OS generated files
+.claude/
 .DS_Store
 .DS_Store?
 ._*

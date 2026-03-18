@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__unity-game-dev__assets-refresh",
+      "mcp__ai-game-developer__assets-refresh",
+      "mcp__ai-game-developer__gameobject-find",
+      "mcp__ai-game-developer__gameobject-component-add",
+      "mcp__ai-game-developer__scene-save",
+      "mcp__ai-game-developer__scene-get-data",
+      "mcp__ai-game-developer__gameobject-component-get",
+      "mcp__ai-game-developer__gameobject-component-destroy",
+      "mcp__unity-game-dev__gameobject-find",
+      "mcp__unity-game-dev__gameobject-create",
+      "mcp__unity-game-dev__gameobject-component-add",
+      "mcp__unity-game-dev__gameobject-component-destroy",
+      "mcp__unity-game-dev__gameobject-component-get",
+      "mcp__unity-game-dev__gameobject-component-modify",
+      "Bash(find ./Assets -type f \\\\\\(-name *.png -o -name *.sprite \\\\\\))",
+      "Bash(find ./Assets/Scripts -type f -name *.cs)",
+      "Bash(ls -la ./Assets/Sprites/*.asset)",
+      "Bash(find ./Assets -type f \\\\\\(-name *.shader -o -name *.mat \\\\\\))",
+      "Bash(ls -la ./Assets/Sprites/*.meta)",
+      "mcp__ai-game-developer__gameobject-component-modify"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "ai-game-developer"
+  ]
+}

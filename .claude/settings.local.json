@@ -23,7 +23,8 @@
       "mcp__ai-game-developer__gameobject-component-modify",
       "mcp__ai-game-developer__script-execute",
       "mcp__unity-game-dev__script-execute",
-      "mcp__unity-game-dev__scene-save"
+      "mcp__unity-game-dev__scene-save",
+      "Bash(xargs -I {} sh -c \"echo \"\"=== {} ===\"\" && cat \"\"{}\"\" | head -20\")"
     ]
   },
   "enableAllProjectMcpServers": true,

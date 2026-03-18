@@ -26,7 +26,7 @@ namespace Presentation.MapGeneration.Editor
         // Add a manual "Generate" button to the inspector
         if (GUILayout.Button("Generate"))
         {
-            mapGen.GenerateMap();;
+            mapGen.GenerateMap();
         }
     }
 }

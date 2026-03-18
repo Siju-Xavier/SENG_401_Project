@@ -92,6 +92,13 @@ namespace BusinessLogic.MapGeneration
                 display.DrawTexture(TextureGenerator.TextureFromColourMap(colorMap, mapWidth, mapHeight));
             }
 
+            // 4. Render the biome grid onto the Tilemap
+            BiomeTilemapRenderer tilemapRenderer = FindFirstObjectByType<BiomeTilemapRenderer>();
+            if (tilemapRenderer != null)
+            {
+                tilemapRenderer.RenderMap();
+            }
+
             // 5. Initialize GridSystem without regions/cities for now
             Debug.Log("GenerateMap: Initializing empty GridSystem");
             gridSystem = FindFirstObjectByType<GridSystem>();

@@ -156,3 +156,97 @@ CREATE INDEX IF NOT EXISTS idx_city_reputations_player_id ON city_reputations(pl
 CREATE OR REPLACE TRIGGER city_reputations_updated_at
     BEFORE UPDATE ON city_reputations
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+-- ── 7. UNLOCKS ───────────────────────────────────────────────────────────────
+-- Records every item / feature unlocked by a player (PlayerProgression.unlockedFeatures).
+-- Upserted with resolution=ignore-duplicates to prevent double-unlock.
+
+CREATE TABLE IF NOT EXISTS unlocks (
+    id          SERIAL          PRIMARY KEY,
+    player_id   INT             NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    item_name   TEXT            NOT NULL,
+    unlocked_at TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    UNIQUE (player_id, item_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_unlocks_player_id ON unlocks(player_id);
+
+
+-- ── 8. GAME_STATS ────────────────────────────────────────────────────────────
+-- One row per completed game session.
+-- Used by ScoringSystem analytics and the leaderboard view.
+-- Maps to GameManager.EndGame() + ScoringSystem outputs.
+
+CREATE TABLE IF NOT EXISTS game_stats (
+    id                      SERIAL          PRIMARY KEY,
+    player_id               INT             NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    session_score           INT             NOT NULL DEFAULT 0,
+    fires_extinguished      INT             NOT NULL DEFAULT 0,
+    cities_saved            INT             NOT NULL DEFAULT 0,
+    cities_lost             INT             NOT NULL DEFAULT 0,
+    total_xp_earned         INT             NOT NULL DEFAULT 0,
+    ticks_survived          INT             NOT NULL DEFAULT 0,
+    final_level             INT             NOT NULL DEFAULT 1,
+    highest_threat_handled  TEXT,                               -- e.g. 'Critical'
+    -- New columns aligned with class diagram & game design notes:
+    round_number            INT             NOT NULL DEFAULT 0, -- round at game-over
+    units_deployed          INT             NOT NULL DEFAULT 0, -- total ActiveResponseUnit deployments
+    map_width               INT             NOT NULL DEFAULT 64,-- GridSystem.width used in session
+    map_height              INT             NOT NULL DEFAULT 64,-- GridSystem.height used in session
+    city_count              INT             NOT NULL DEFAULT 0, -- number of cities in session
+    played_at               TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_game_stats_player_id     ON game_stats(player_id);
+CREATE INDEX IF NOT EXISTS idx_game_stats_session_score ON game_stats(session_score DESC);
+
+
+-- ── Row Level Security (RLS) ─────────────────────────────────────────────────
+-- Enable RLS on all tables.
+-- Currently allows anon key full access (single-player prototype).
+-- Tighten with auth.uid() per-user policies when authentication is added.
+
+ALTER TABLE players               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE game_settings         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE save_games            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE regions               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE active_response_units ENABLE ROW LEVEL SECURITY;
+ALTER TABLE city_reputations      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unlocks               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE game_stats            ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "anon_all_players"               ON players               FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_all_game_settings"         ON game_settings         FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_all_save_games"            ON save_games            FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_all_regions"               ON regions               FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_all_active_response_units" ON active_response_units FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_all_city_reputations"      ON city_reputations      FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_all_unlocks"               ON unlocks               FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "anon_all_game_stats"            ON game_stats            FOR ALL TO anon USING (true) WITH CHECK (true);
+
+
+-- ── Useful Views ─────────────────────────────────────────────────────────────
+
+-- Global leaderboard: top players by total_score (used by UIManager leaderboard panel)
+CREATE OR REPLACE VIEW leaderboard AS
+SELECT
+    p.id,
+    p.username,
+    p.progression_level,
+    p.total_score,
+    p.updated_at
+FROM players p
+ORDER BY p.total_score DESC;
+
+-- Per-player best session (used by ScoringSystem / UIManager)
+CREATE OR REPLACE VIEW player_best_sessions AS
+SELECT
+    gs.player_id,
+    p.username,
+    MAX(gs.session_score)       AS best_score,
+    SUM(gs.fires_extinguished)  AS total_fires_extinguished,
+    SUM(gs.cities_saved)        AS total_cities_saved,
+    MAX(gs.round_number)        AS highest_round_reached,
+    COUNT(*)                    AS games_played
+FROM game_stats gs
+JOIN players p ON p.id = gs.player_id
+GROUP BY gs.player_id, p.username;

@@ -42,7 +42,9 @@ namespace Presentation
 
             input.Normalize();
 
-            Vector3 move = new Vector3(input.x, input.y, 0f) * (moveSpeed * Time.deltaTime);
+            // Scale move speed by zoom level: slower when zoomed in, faster when zoomed out
+            float zoomFactor = cam != null ? cam.orthographicSize / maxZoom : 1f;
+            Vector3 move = new Vector3(input.x, input.y, 0f) * (moveSpeed * zoomFactor * Time.deltaTime);
             Vector3 pos = transform.position + move;
 
             // Snap to pixel grid to prevent tile edge flickering

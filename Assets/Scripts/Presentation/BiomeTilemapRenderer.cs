@@ -5,7 +5,7 @@ namespace Presentation.MapGeneration
     using BusinessLogic.MapGeneration;
     using ScriptableObjects;
 
-    public class TilemapRenderer : MonoBehaviour
+    public class BiomeTilemapRenderer : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private Tilemap groundTilemap;
@@ -15,7 +15,7 @@ namespace Presentation.MapGeneration
         {
             if (mapGenerator == null || mapGenerator.BiomeGrid == null)
             {
-                Debug.LogWarning("TilemapRenderer: No biome grid to render. Generate the map first.");
+                Debug.LogWarning("BiomeTilemapRenderer: No biome grid to render. Generate the map first.");
                 return;
             }
 

@@ -1,0 +1,40 @@
+  m_Origin: {x: 0, y: 0, z: 0}
+<<<<<<< Updated upstream
+  m_Size: {x: 100, y: 100, z: 1}
+  m_TileAnchor: {x: 0.5, y: 0.5, z: 0}
+=======
+  m_Size: {x: 500, y: 500, z: 1}
+  m_TileAnchor: {x: 0, y: 0, z: 0}
+>>>>>>> Stashed changes
+  m_TileOrientation: 0
+  m_TileOrientationMatrix:
+    e00: 1
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 1
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 1
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 1
+--- !u!1660057539 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 1795756226}
+  - {fileID: 817334158}
+  - {fileID: 1937814194}
+  - {fileID: 56713892}
+<<<<<<< Updated upstream
+  - {fileID: 1150980859}
+  - {fileID: 849030221}
+  - {fileID: 723037335}
+=======
+>>>>>>> Stashed changes

@@ -15,6 +15,7 @@ namespace GameState {
         public void Initialize(int w, int h) {
             width = w;
             height = h;
+            regions.Clear();
             gridArray = new Tile[width, height];
 
             for (int y = 0; y < height; y++) {

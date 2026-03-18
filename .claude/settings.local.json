@@ -20,7 +20,8 @@
       "Bash(ls -la ./Assets/Sprites/*.asset)",
       "Bash(find ./Assets -type f \\\\\\(-name *.shader -o -name *.mat \\\\\\))",
       "Bash(ls -la ./Assets/Sprites/*.meta)",
-      "mcp__ai-game-developer__gameobject-component-modify"
+      "mcp__ai-game-developer__gameobject-component-modify",
+      "mcp__unity-game-dev__gameobject-destroy"
     ]
   },
   "enableAllProjectMcpServers": true,

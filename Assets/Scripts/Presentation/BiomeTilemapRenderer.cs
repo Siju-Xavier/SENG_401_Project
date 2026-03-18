@@ -10,6 +10,7 @@ namespace Presentation.MapGeneration
         [Header("References")]
         [SerializeField] private Tilemap groundTilemap;
         [SerializeField] private MapGenerator mapGenerator;
+        [SerializeField] private CameraController cameraController;
 
         public void RenderMap()
         {
@@ -37,6 +38,17 @@ namespace Presentation.MapGeneration
                     }
                 }
             }
+
+            CenterCamera(width, height);
+        }
+
+        private void CenterCamera(int width, int height)
+        {
+            if (cameraController == null) return;
+
+            Vector3Int centerCell = new Vector3Int(width / 2, height / 2, 0);
+            Vector3 worldCenter = groundTilemap.CellToWorld(centerCell);
+            cameraController.CenterOn(worldCenter);
         }
 
         public void SetTileBurning(int x, int y)

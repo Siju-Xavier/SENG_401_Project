@@ -14,8 +14,15 @@ namespace Core {
         }
 
         public void StartGame() { }
-        public void PauseGame() { }
-        public void ResumeGame() { }
+        
+        public void PauseGame() {
+            Time.timeScale = 0f; // Stops all time-based logic and animations
+        }
+        
+        public void ResumeGame() {
+            Time.timeScale = 1f; // Resumes game at normal speed
+        }
+        
         public void EndGame(object data = null) { }
     }
 }

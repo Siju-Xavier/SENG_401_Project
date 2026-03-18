@@ -28,8 +28,8 @@ namespace Persistence
     {
         // ── Configuration ────────────────────────────────────────────────
         [Header("Supabase Configuration")]
-        [SerializeField] private string supabaseUrl     = "https://YOUR_PROJECT_REF.supabase.co";
-        [SerializeField] private string supabaseAnonKey = "YOUR_ANON_KEY";
+        [SerializeField] private string supabaseUrl     = "https://knugnxjsohrolcjrakoo.supabase.co";
+        [SerializeField] private string supabaseAnonKey = "sb_publishable_JNaZsggrPt7sGmd5108CXA_eHSGENa7";
 
         // ── Save slot limit (maps to DatabaseProvider.count in diagram) ──
         [Header("Save Slot Limit")]

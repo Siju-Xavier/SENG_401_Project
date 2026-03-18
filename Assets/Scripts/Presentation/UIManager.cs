@@ -63,6 +63,17 @@ namespace Presentation {
             }
         }
 
+        // Linked to the "Save" button inside the Pause Panel
+        public void SaveGameClicked() {
+            Persistence.SaveManager saveManager = FindObjectOfType<Persistence.SaveManager>();
+            if (saveManager != null) {
+                saveManager.SaveFile();
+                Debug.Log("Game Saved via UI!");
+            } else {
+                Debug.LogWarning("SaveManager not found in scene!");
+            }
+        }
+
         // Linked to the "Quit to Menu" button inside the Pause Panel
         public void QuitToMenuClicked() {
             // First, ensure time is unpaused before leaving, otherwise the main menu will be frozen!

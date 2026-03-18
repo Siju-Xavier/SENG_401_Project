@@ -1,6 +1,6 @@
 namespace Core {
     using UnityEngine;
-    using BusinessLogic;
+    using Business_Logic;
 
     public class GameManager : MonoBehaviour {
         [SerializeField] private ResourceManager resourceManager;

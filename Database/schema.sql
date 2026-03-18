@@ -116,3 +116,43 @@ CREATE TABLE IF NOT EXISTS regions (
 
 CREATE INDEX IF NOT EXISTS idx_regions_player_id ON regions(player_id);
 CREATE INDEX IF NOT EXISTS idx_regions_save_id   ON regions(save_id);
+
+-- ── 5. ACTIVE_RESPONSE_UNITS ─────────────────────────────────────────────────
+-- Maps to ActiveResponseUnit class (currentLocation, currentWater, UnitState).
+-- Each row represents one deployable unit owned by a city at save time.
+-- unit_type corresponds to the UnitConfig ScriptableObject key.
+
+CREATE TABLE IF NOT EXISTS active_response_units (
+    id              SERIAL      PRIMARY KEY,
+    player_id       INT         NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    save_id         INT         REFERENCES save_games(id) ON DELETE CASCADE,
+    city_name       TEXT        NOT NULL,                        -- owning City.name
+    unit_type       TEXT        NOT NULL,                        -- UnitConfig key, e.g. 'BasicTruck'
+    location_x      FLOAT       NOT NULL DEFAULT 0,              -- ActiveResponseUnit.currentLocation.x
+    location_y      FLOAT       NOT NULL DEFAULT 0,              -- ActiveResponseUnit.currentLocation.y
+    current_water   INT         NOT NULL DEFAULT 0,              -- ActiveResponseUnit.currentWater
+    state           TEXT        NOT NULL DEFAULT 'Idle'          -- UnitState: Idle/Deploying/Extinguishing/Returning
+);
+
+CREATE INDEX IF NOT EXISTS idx_aru_player_id ON active_response_units(player_id);
+CREATE INDEX IF NOT EXISTS idx_aru_save_id   ON active_response_units(save_id);
+
+
+-- ── 6. CITY_REPUTATIONS ──────────────────────────────────────────────────────
+-- Tracks per-player reputation for each named city (ReputationManager output).
+-- Upserted on conflict (player_id, city_name).
+
+CREATE TABLE IF NOT EXISTS city_reputations (
+    id          SERIAL          PRIMARY KEY,
+    player_id   INT             NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    city_name   TEXT            NOT NULL,
+    reputation  INT             NOT NULL DEFAULT 50 CHECK (reputation BETWEEN 0 AND 100),
+    updated_at  TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    UNIQUE (player_id, city_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_city_reputations_player_id ON city_reputations(player_id);
+
+CREATE OR REPLACE TRIGGER city_reputations_updated_at
+    BEFORE UPDATE ON city_reputations
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();

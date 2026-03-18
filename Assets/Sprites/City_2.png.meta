@@ -3,8 +3,8 @@ guid: 5c1fc4449f1b41f4e864566941570e2d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -6055603813176561748
-    second: City_2_0
+      213: -5698477272865039271
+    second: city_2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -96,30 +96,17 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: WebGL
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: City_2_0
+      name: city_2_0
       rect:
         serializedVersion: 2
-        x: 733
-        y: 232
-        width: 1323
-        height: 946
+        x: 34
+        y: 66
+        width: 434
+        height: 348
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: caf2c177a6c26fba0800000000000000
-      internalID: -6055603813176561748
+      spriteID: 95c1e36bc11fae0b0800000000000000
+      internalID: -5698477272865039271
       vertices: []
       indices: 
       edges: []
@@ -148,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      City_2_0: -6055603813176561748
+      city_2_0: -5698477272865039271
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

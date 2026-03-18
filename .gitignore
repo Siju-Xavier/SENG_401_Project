@@ -12,7 +12,9 @@ Builds/
 Logs/
 MemoryCaptures/
 UserSettings/
-Packages/
+Packages/*
+!Packages/manifest.json
+!Packages/packages-lock.json
 TextMesh Pro/
 
 # AssetStoreTools

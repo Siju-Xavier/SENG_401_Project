@@ -55,7 +55,8 @@ sysinfo.txt
 crashlytics-build.properties
 
 # OS generated files
-.claude/
+.claude
+.vscode
 .DS_Store
 .DS_Store?
 ._*
@@ -66,3 +67,7 @@ ehthumbs.db
 Thumbs.db
 Desktop.ini
 .mcp.json
+.claude/settings.local.json
+.mcp.json
+.mcp.json
+.claude/settings.local.json

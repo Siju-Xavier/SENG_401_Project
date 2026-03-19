@@ -24,6 +24,22 @@ namespace Presentation.MapGeneration
 
         private GameObject treeContainer;
 
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.V))
+            {
+                ToggleVegetation();
+            }
+        }
+
+        public void ToggleVegetation()
+        {
+            if (treeContainer != null)
+            {
+                treeContainer.SetActive(!treeContainer.activeSelf);
+            }
+        }
+
         public void ClearTrees()
         {
             if (treeContainer != null)
@@ -85,9 +101,9 @@ namespace Presentation.MapGeneration
                     // Pick a sprite deterministically
                     Sprite sprite = biome.VegetationSprites[rng.Next(biome.VegetationSprites.Length)];
 
-                    // Convert tile position to world position
+                    // Convert tile position to world center
                     Vector3Int tilePos = new Vector3Int(x, y, 0);
-                    Vector3 worldPos = groundTilemap.CellToWorld(tilePos) + groundTilemap.cellSize * 0.5f;
+                    Vector3 worldPos = groundTilemap.GetCellCenterWorld(tilePos);
 
                     // Create vegetation GameObject
                     var treeGO = new GameObject($"Tree_{x}_{y}");
@@ -97,7 +113,7 @@ namespace Presentation.MapGeneration
 
                     var sr = treeGO.AddComponent<SpriteRenderer>();
                     sr.sprite = sprite;
-                    sr.sortingOrder = sortingOrder;
+                    sr.sortingOrder = sortingOrder + (height - y);
                 }
             }
 

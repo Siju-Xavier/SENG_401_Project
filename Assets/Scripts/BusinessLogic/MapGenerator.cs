@@ -99,6 +99,13 @@ namespace BusinessLogic.MapGeneration
                 tilemapRenderer.RenderMap();
             }
 
+            // 4b. Place vegetation on biomes that have vegetation sprites
+            TreePlacer treePlacer = FindFirstObjectByType<TreePlacer>();
+            if (treePlacer != null)
+            {
+                treePlacer.PlaceTrees(noiseMap, biomeGrid, biomes, seed);
+            }
+
             // 5. Initialize GridSystem without regions/cities for now
             Debug.Log("GenerateMap: Initializing empty GridSystem");
             gridSystem = FindFirstObjectByType<GridSystem>();

@@ -94,8 +94,22 @@ namespace Presentation.MapGeneration
                     float noiseValue = noiseMap[x, y];
                     float normalized = (noiseValue - rangeMin) / (rangeMax - rangeMin);
 
-                    // Only place vegetation within the threshold band
-                    if (normalized < minThreshold || normalized > maxThreshold)
+                    // Spawn probability: 100% between thresholds, fades to 0% at biome edges
+                    float spawnChance;
+                    if (normalized >= minThreshold && normalized <= maxThreshold)
+                    {
+                        spawnChance = 1f;
+                    }
+                    else if (normalized < minThreshold)
+                    {
+                        spawnChance = normalized / minThreshold;
+                    }
+                    else
+                    {
+                        spawnChance = (1f - normalized) / (1f - maxThreshold);
+                    }
+
+                    if ((float)rng.NextDouble() > spawnChance)
                         continue;
 
                     // Pick a sprite deterministically
@@ -114,6 +128,16 @@ namespace Presentation.MapGeneration
                     var sr = treeGO.AddComponent<SpriteRenderer>();
                     sr.sprite = sprite;
                     sr.sortingOrder = sortingOrder + (height - y);
+
+                    // Fake drop shadow
+                    var shadowGO = new GameObject("Shadow");
+                    shadowGO.transform.SetParent(treeGO.transform);
+                    shadowGO.transform.localPosition = new Vector3(0.05f, -0.05f, 0f);
+                    shadowGO.transform.localScale = Vector3.one;
+                    var shadowSR = shadowGO.AddComponent<SpriteRenderer>();
+                    shadowSR.sprite = sprite;
+                    shadowSR.color = new Color(0f, 0f, 0f, 0.3f);
+                    shadowSR.sortingOrder = sr.sortingOrder - 1;
                 }
             }
 

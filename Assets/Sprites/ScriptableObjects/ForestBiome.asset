@@ -19,5 +19,9 @@ MonoBehaviour:
   defaultTile: {fileID: 11400000, guid: 5486332d5bc764e61a0a3650e3967800, type: 2}
   burningTile: {fileID: 0}
   vegetationSprites:
-  - {fileID: -231948628125939053, guid: 324be52cb4166354fb12437882d9582a, type: 3}
+  - {fileID: -231948628125939053, guid: d152bd5ed098b4e45b9f5ddc531fa38b, type: 3}
+  - {fileID: -6170301780317497036, guid: 00cac33c0dae81b438e2694056b84a48, type: 3}
+  - {fileID: -5172981082200280501, guid: 62374b61af088ae439faf5eb684b5719, type: 3}
+  - {fileID: 8084239964029314362, guid: e6e90ca242301d24884aae69a58eefcf, type: 3}
+  - {fileID: -8645033144741102643, guid: 586c2d19aa8d4d74fae0c51e7a262eca, type: 3}
   maxHeight: 0.8

@@ -18,4 +18,6 @@ MonoBehaviour:
   burningSprite: {fileID: 0}
   defaultTile: {fileID: 11400000, guid: 5486332d5bc764e61a0a3650e3967800, type: 2}
   burningTile: {fileID: 0}
+  vegetationSprites:
+  - {fileID: -231948628125939053, guid: 324be52cb4166354fb12437882d9582a, type: 3}
   maxHeight: 0.8

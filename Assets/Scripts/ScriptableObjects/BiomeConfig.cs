@@ -13,6 +13,10 @@ namespace ScriptableObjects {
         [SerializeField] private TileBase defaultTile;
         [SerializeField] private TileBase burningTile;
 
+        [Header("Vegetation")]
+        [Tooltip("Sprites to place on tiles of this biome (e.g., trees, shrubs)")]
+        [SerializeField] private Sprite[] vegetationSprites;
+
         [Header("Perlin Noise Threshold")]
         [Tooltip("Max Perlin height value for this biome (0-1)")]
         [SerializeField] private float maxHeight;
@@ -23,6 +27,7 @@ namespace ScriptableObjects {
         public Sprite BurningSprite => burningSprite;
         public TileBase DefaultTile => defaultTile;
         public TileBase BurningTile => burningTile;
+        public Sprite[] VegetationSprites => vegetationSprites;
         public float MaxHeight => maxHeight;
     }
 }

@@ -129,14 +129,15 @@ namespace Presentation.MapGeneration
                     sr.sprite = sprite;
                     sr.sortingOrder = sortingOrder + (height - y);
 
-                    // Fake drop shadow
+                    // Fake projected shadow (light from left)
                     var shadowGO = new GameObject("Shadow");
                     shadowGO.transform.SetParent(treeGO.transform);
-                    shadowGO.transform.localPosition = new Vector3(0.05f, -0.05f, 0f);
-                    shadowGO.transform.localScale = Vector3.one;
+                    shadowGO.transform.localPosition = new Vector3(0.15f, -0.05f, 0f);
+                    shadowGO.transform.localScale = new Vector3(1f, 0.5f, 1f);
+                    shadowGO.transform.localRotation = Quaternion.Euler(0f, 0f, -30f);
                     var shadowSR = shadowGO.AddComponent<SpriteRenderer>();
                     shadowSR.sprite = sprite;
-                    shadowSR.color = new Color(0f, 0f, 0f, 0.3f);
+                    shadowSR.color = new Color(0f, 0f, 0f, 0.25f);
                     shadowSR.sortingOrder = sr.sortingOrder - 1;
                 }
             }

@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73e5aca3f99e50b4ba5c21f8f306f834, type: 3}
   m_Name: GrassBiome
   m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.BiomeConfig
-  spreadMultiplier: 0
-  baseMoisture: 0
+  spreadMultiplier: 1.2
+  baseMoisture: 0.2
   defaultSprite: {fileID: 0}
   burningSprite: {fileID: 0}
   defaultTile: {fileID: 11400000, guid: fe536fe96842a468d85fb21308eba69a, type: 2}
   burningTile: {fileID: 0}
+  vegetationSprites: []
   maxHeight: 0.6

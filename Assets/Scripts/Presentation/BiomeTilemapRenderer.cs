@@ -1,7 +1,16 @@
+// ============================================================================
+// BiomeTilemapRenderer.cs — Renders biome tiles onto a Unity Tilemap
+// ============================================================================
+// Also subscribes to fire events from EventBroker to swap ground tiles
+// between their default and burning variants (from BiomeConfig).
+// ============================================================================
+
 namespace Presentation.MapGeneration
 {
     using UnityEngine;
     using UnityEngine.Tilemaps;
+    using BusinessLogic.MapGeneration;
+    using Core;
     using GameState;
     using ScriptableObjects;
 
@@ -11,6 +20,38 @@ namespace Presentation.MapGeneration
         [SerializeField] private Tilemap groundTilemap;
 
         private MapData mapData;
+
+        // ── Unity Lifecycle ──────────────────────────────────────────────
+
+        private void OnEnable() {
+            EventBroker.Instance.Subscribe(Core.EventType.FireStarted,      OnFireStarted);
+            EventBroker.Instance.Subscribe(Core.EventType.FireSpread,       OnFireSpread);
+            EventBroker.Instance.Subscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+        }
+
+        private void OnDisable() {
+            EventBroker.Instance.Unsubscribe(Core.EventType.FireStarted,      OnFireStarted);
+            EventBroker.Instance.Unsubscribe(Core.EventType.FireSpread,       OnFireSpread);
+            EventBroker.Instance.Unsubscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+        }
+
+        // ── Event Handlers ───────────────────────────────────────────────
+
+        private void OnFireStarted(object data)  => SwapToBurning(data as GameState.Tile);
+        private void OnFireSpread(object data)   => SwapToBurning(data as GameState.Tile);
+        private void OnFireExtinguished(object data) => SwapToDefault(data as GameState.Tile);
+
+        private void SwapToBurning(GameState.Tile tile) {
+            if (tile == null) return;
+            SetTileBurning(tile.X, tile.Y);
+        }
+
+        private void SwapToDefault(GameState.Tile tile) {
+            if (tile == null) return;
+            SetTileDefault(tile.X, tile.Y);
+        }
+
+        // ── Map Rendering ────────────────────────────────────────────────
 
         public void RenderMap(MapData data)
         {
@@ -36,6 +77,8 @@ namespace Presentation.MapGeneration
                 }
             }
         }
+
+        // ── Tile Swap Helpers ────────────────────────────────────────────
 
         public void SetTileBurning(int x, int y)
         {

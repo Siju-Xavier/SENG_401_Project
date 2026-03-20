@@ -31,10 +31,10 @@ namespace Core {
         public int CurrentRound { get => currentRound; set => currentRound = value; }
 
         private void Start() {
-            EventBroker.Instance.Subscribe(EventType.GameEnded, EndGame);
+            EventBroker.Instance.Subscribe(Core.EventType.GameEnded, EndGame);
 
             // Check if we were asked to restore a save (from MainMenuManager.ContinueGame)
-            if (MainMenuManager.ShouldLoadSave && saveManager != null) {
+            if (Presentation.MainMenuManager.ShouldLoadSave && saveManager != null) {
                 Debug.Log("[GameManager] ShouldLoadSave flag set — loading via active provider.");
                 var save = saveManager.LoadFile();
                 LoadGame(save);
@@ -48,9 +48,37 @@ namespace Core {
             currentTick = 0;
             currentRound = 1;
 
-            // GridSystem is managed by the orchestrator
-            if (mapOrchestrator != null)
+            if (mapOrchestrator != null || mapGenerator != null) {
+                StartCoroutine(WaitForMapAndStartFires());
+            } else {
+                FinishStartGame();
+            }
+        }
+
+        private IEnumerator WaitForMapAndStartFires() {
+            if (mapOrchestrator != null) {
+                // Wait until MapGenerationOrchestrator has initialized the GridSystem
+                while (mapOrchestrator.GridSystem == null) {
+                    yield return null;
+                }
                 gridSystem = mapOrchestrator.GridSystem;
+            } else if (mapGenerator != null) {
+                // Wait until MapGenerator has initialized the GridSystem
+                while (mapGenerator.GridSystem == null) {
+                    yield return null;
+                }
+                gridSystem = mapGenerator.GridSystem;
+            }
+            FinishStartGame();
+        }
+
+        private void FinishStartGame() {
+            // Start the fire simulation (UML: GameManager --> FireEngine : controls_lifecycle)
+            if (fireEngine != null) {
+                if (gridSystem != null) fireEngine.SetGridSystem(gridSystem);
+                fireEngine.Resume();
+                fireEngine.StartRandomFires();
+            }
 
             // Start the auto-save loop
             if (autoSaveController != null)
@@ -59,10 +87,12 @@ namespace Core {
 
         public void PauseGame() {
             Time.timeScale = 0f;
+            if (fireEngine != null) fireEngine.Pause();
         }
 
         public void ResumeGame() {
             Time.timeScale = 1f;
+            if (fireEngine != null) fireEngine.Resume();
         }
 
         public void EndGame(object data = null) {
@@ -99,8 +129,24 @@ namespace Core {
 
             // Restore weather
             if (weatherSystem != null && save.wind != null) {
-                // WeatherSystem will pick up state on next UpdateWeatherState()
                 Debug.Log($"[GameManager] Restored wind: ({save.wind.dirX}, {save.wind.dirY}), speed {save.wind.speed}");
+            }
+
+            // Restore fires from save data and resume simulation
+            if (fireEngine != null) {
+                if (mapGenerator != null)
+                    gridSystem = mapGenerator.GridSystem;
+
+                if (gridSystem != null && save.activeFires != null) {
+                    foreach (var fireSave in save.activeFires) {
+                        var tile = gridSystem.GetTileAt(fireSave.posX, fireSave.posY);
+                        if (tile != null) {
+                            fireEngine.IgniteTile(tile);
+                            tile.FireIntensity = fireSave.intensity;
+                        }
+                    }
+                }
+                fireEngine.Resume();
             }
 
             // Start the auto-save loop
@@ -154,6 +200,21 @@ namespace Core {
             if (resourceManager != null) {
                 // ResourceManager fields are currently stubs; ready to populate
                 // when ResourceManager exposes its budget/firefighter counts
+            }
+
+            // Active fires (from FireEngine)
+            if (fireEngine != null) {
+                foreach (var tile in fireEngine.GetBurningTiles()) {
+                    data.activeFires.Add(new SaveManager.FireTileSave {
+                        posX         = tile.X,
+                        posY         = tile.Y,
+                        intensity    = Mathf.RoundToInt(tile.FireIntensity),
+                        containment  = 0f,
+                        isDestroyed  = false,
+                        ticksBurning = 0,
+                        tileType     = tile.Biome != null ? tile.Biome.name : "unknown"
+                    });
+                }
             }
 
             return data;

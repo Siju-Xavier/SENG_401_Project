@@ -1,27 +1,101 @@
-using UnityEngine;
-using UnityEngine.SceneManagement; // This is required to load new scenes!
+// ============================================================================
+// MainMenuManager.cs — Controls the Main Menu scene
+// ============================================================================
+// Attach this to an empty GameObject in the MainMenu scene.
+// Wire the four buttons' OnClick() events to the public methods below.
+// Drag the Settings and No-Save panels into the Inspector fields.
+// ============================================================================
 
-public class MainMenuManager : MonoBehaviour
+namespace Presentation
 {
-    // This method will be linked to the "Start New Game" button
-    public void StartNewGame()
-    {
-        Debug.Log("Loading Game...");
-        // "Game" must be the exact name of your saved game scene file!
-        SceneManager.LoadScene("Game"); 
-    }
+    using UnityEngine;
+    using UnityEngine.SceneManagement;
 
-    // This method will be linked to the "Continue" button
-    public void ContinueGame()
+    public class MainMenuManager : MonoBehaviour
     {
-        Debug.Log("Continue Game clicked - feature coming soon!");
-        // We will add save loading logic here later
-    }
+        // ── Inspector References ─────────────────────────────────────────────
+        [Header("Panels")]
+        [Tooltip("The Settings overlay panel. Set inactive by default in the scene.")]
+        [SerializeField] private GameObject settingsPanel;
 
-    // This method will be linked to the "Settings" button
-    public void OpenSettings()
-    {
-        Debug.Log("Settings opened - feature coming soon!");
-         // We will open a settings menu panel here later
+        [Tooltip("Panel shown when Load Game is clicked but no save exists.")]
+        [SerializeField] private GameObject noSavePanel;
+
+        // ── Unity Lifecycle ──────────────────────────────────────────────────
+        private void Start()
+        {
+            // Ensure both panels are hidden on menu open
+            if (settingsPanel != null) settingsPanel.SetActive(false);
+            if (noSavePanel   != null) noSavePanel.SetActive(false);
+        }
+
+        // ── Button Handlers ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// "Start Game" button — begins a fresh game.
+        /// </summary>
+        public void StartNewGame()
+        {
+            Debug.Log("[MainMenu] Starting new game...");
+            SceneManager.LoadScene("Game");
+        }
+
+        /// <summary>
+        /// "Load Game" button — loads the most recent save, or shows a
+        /// "no save found" message if nothing is stored locally.
+        /// </summary>
+        public void LoadGame()
+        {
+            if (Persistence.SaveManager.HasLocalSave())
+            {
+                Debug.Log("[MainMenu] Save found — loading game...");
+                // SaveManager will restore state once the Game scene starts.
+                SceneManager.LoadScene("Game");
+            }
+            else
+            {
+                Debug.LogWarning("[MainMenu] No save file found.");
+                if (noSavePanel != null)
+                    noSavePanel.SetActive(true);
+                else
+                    Debug.LogWarning("[MainMenu] noSavePanel is not assigned in the Inspector!");
+            }
+        }
+
+        /// <summary>
+        /// "Settings" button — toggles the settings panel open/closed.
+        /// </summary>
+        public void OpenSettings()
+        {
+            if (settingsPanel != null)
+                settingsPanel.SetActive(!settingsPanel.activeSelf);
+            else
+                Debug.LogWarning("[MainMenu] settingsPanel is not assigned in the Inspector!");
+        }
+
+        /// <summary>
+        /// "Quit" button — exits the application.
+        /// Note: Application.Quit() has no effect inside the Unity Editor;
+        /// a log message is printed so you can verify the call was reached.
+        /// </summary>
+        public void QuitGame()
+        {
+            Debug.Log("[MainMenu] Quit called.");
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Called by the "Close" button inside the No-Save panel.
+        /// </summary>
+        public void CloseNoSavePanel()
+        {
+            if (noSavePanel != null) noSavePanel.SetActive(false);
+        }
     }
 }

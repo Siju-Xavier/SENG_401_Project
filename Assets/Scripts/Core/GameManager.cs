@@ -10,6 +10,7 @@ namespace Core {
 
     public class GameManager : MonoBehaviour {
         [SerializeField] private ResourceManager resourceManager;
+        [SerializeField] private MapGenerationOrchestrator mapOrchestrator;
         [SerializeField] private MapGenerator mapGenerator;
         [SerializeField] private WeatherSystem weatherSystem;
         [SerializeField] private FireEngine fireEngine;
@@ -47,9 +48,9 @@ namespace Core {
             currentTick = 0;
             currentRound = 1;
 
-            // GridSystem is created by MapGenerator during GenerateMap()
-            if (mapGenerator != null)
-                gridSystem = mapGenerator.GridSystem;
+            // GridSystem is managed by the orchestrator
+            if (mapOrchestrator != null)
+                gridSystem = mapOrchestrator.GridSystem;
 
             // Start the auto-save loop
             if (autoSaveController != null)
@@ -112,8 +113,8 @@ namespace Core {
         /// Used by SaveManager.SaveFile(), AutoSaveController, and EndGame().
         /// </summary>
         public SaveManager.GameSaveData BuildSaveData() {
-            if (mapGenerator != null)
-                gridSystem = mapGenerator.GridSystem;
+            if (mapOrchestrator != null)
+                gridSystem = mapOrchestrator.GridSystem;
 
             var data = new SaveManager.GameSaveData {
                 currentTick  = currentTick,

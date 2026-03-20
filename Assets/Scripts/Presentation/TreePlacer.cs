@@ -1,7 +1,9 @@
 namespace Presentation.MapGeneration
 {
+    using System.Collections.Generic;
     using UnityEngine;
     using UnityEngine.Tilemaps;
+    using GameState;
     using ScriptableObjects;
 
     public class TreePlacer : MonoBehaviour
@@ -10,19 +12,17 @@ namespace Presentation.MapGeneration
         [SerializeField] private Tilemap groundTilemap;
 
         [Header("Density Thresholds")]
-        [Tooltip("Normalized position within biome range below which no vegetation spawns (0-1)")]
         [Range(0f, 1f)]
         [SerializeField] private float minThreshold = 0.2f;
-
-        [Tooltip("Normalized position within biome range above which no vegetation spawns (0-1)")]
         [Range(0f, 1f)]
         [SerializeField] private float maxThreshold = 0.8f;
 
         [Header("Display")]
         [SerializeField] private float spriteScale = 1f;
-        [SerializeField] private int sortingOrder = 5;
+        [SerializeField] private int baseSortingOrder = 5;
 
         private GameObject treeContainer;
+        private Dictionary<Vector2Int, GameObject> treesByTile = new Dictionary<Vector2Int, GameObject>();
 
         private void Update()
         {
@@ -42,6 +42,8 @@ namespace Presentation.MapGeneration
 
         public void ClearTrees()
         {
+            treesByTile.Clear();
+
             if (treeContainer != null)
             {
                 if (Application.isPlaying) Destroy(treeContainer);
@@ -59,67 +61,76 @@ namespace Presentation.MapGeneration
             }
         }
 
-        public void PlaceTrees(float[,] noiseMap, BiomeConfig[,] biomeGrid, BiomeConfig[] biomes, int seed)
+        public void RemoveTreesInArea(int startX, int startY, int width, int height)
+        {
+            for (int y = startY; y < startY + height; y++)
+            {
+                for (int x = startX; x < startX + width; x++)
+                {
+                    var key = new Vector2Int(x, y);
+                    if (treesByTile.TryGetValue(key, out GameObject treeGO))
+                    {
+                        if (treeGO != null)
+                        {
+                            if (Application.isPlaying) Destroy(treeGO);
+                            else DestroyImmediate(treeGO);
+                        }
+                        treesByTile.Remove(key);
+                    }
+                }
+            }
+        }
+
+        public void PlaceTrees(MapData mapData)
         {
             ClearTrees();
 
             treeContainer = new GameObject("Trees");
             treeContainer.transform.SetParent(transform);
 
-            int width = biomeGrid.GetLength(0);
-            int height = biomeGrid.GetLength(1);
-            System.Random rng = new System.Random(seed);
+            int width = mapData.Width;
+            int height = mapData.Height;
+            System.Random rng = new System.Random(mapData.Seed);
+            int treeCount = 0;
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    BiomeConfig biome = biomeGrid[x, y];
+                    BiomeConfig biome = mapData.BiomeGrid[x, y];
                     if (biome == null || biome.VegetationSprites == null || biome.VegetationSprites.Length == 0)
                         continue;
 
-                    // Find this biome's height range from the sorted biomes array
                     float rangeMin = 0f;
                     float rangeMax = biome.MaxHeight;
-                    for (int i = 0; i < biomes.Length; i++)
+                    for (int i = 0; i < mapData.Biomes.Length; i++)
                     {
-                        if (biomes[i] == biome)
+                        if (mapData.Biomes[i] == biome)
                         {
-                            rangeMin = i > 0 ? biomes[i - 1].MaxHeight : 0f;
+                            rangeMin = i > 0 ? mapData.Biomes[i - 1].MaxHeight : 0f;
                             break;
                         }
                     }
 
-                    // Normalize the noise value within the biome's range (0-1)
-                    float noiseValue = noiseMap[x, y];
+                    float noiseValue = mapData.NoiseMap[x, y];
                     float normalized = (noiseValue - rangeMin) / (rangeMax - rangeMin);
 
-                    // Spawn probability: 100% between thresholds, fades to 0% at biome edges
                     float spawnChance;
                     if (normalized >= minThreshold && normalized <= maxThreshold)
-                    {
                         spawnChance = 1f;
-                    }
                     else if (normalized < minThreshold)
-                    {
                         spawnChance = normalized / minThreshold;
-                    }
                     else
-                    {
                         spawnChance = (1f - normalized) / (1f - maxThreshold);
-                    }
 
                     if ((float)rng.NextDouble() > spawnChance)
                         continue;
 
-                    // Pick a sprite deterministically
                     Sprite sprite = biome.VegetationSprites[rng.Next(biome.VegetationSprites.Length)];
 
-                    // Convert tile position to world center
                     Vector3Int tilePos = new Vector3Int(x, y, 0);
                     Vector3 worldPos = groundTilemap.GetCellCenterWorld(tilePos);
 
-                    // Create vegetation GameObject
                     var treeGO = new GameObject($"Tree_{x}_{y}");
                     treeGO.transform.SetParent(treeContainer.transform);
                     treeGO.transform.position = new Vector3(worldPos.x, worldPos.y, 0f);
@@ -127,22 +138,16 @@ namespace Presentation.MapGeneration
 
                     var sr = treeGO.AddComponent<SpriteRenderer>();
                     sr.sprite = sprite;
-                    sr.sortingOrder = sortingOrder + (height - y);
+                    // Isometric sorting: same diagonal (x+y) = same depth
+                    // Higher (x+y) = further from camera = lower sorting order
+                    sr.sortingOrder = baseSortingOrder + (width + height) - (x + y);
 
-                    // Fake projected shadow (light from left)
-                    var shadowGO = new GameObject("Shadow");
-                    shadowGO.transform.SetParent(treeGO.transform);
-                    shadowGO.transform.localPosition = new Vector3(0.15f, -0.05f, 0f);
-                    shadowGO.transform.localScale = new Vector3(1f, 0.5f, 1f);
-                    shadowGO.transform.localRotation = Quaternion.Euler(0f, 0f, -30f);
-                    var shadowSR = shadowGO.AddComponent<SpriteRenderer>();
-                    shadowSR.sprite = sprite;
-                    shadowSR.color = new Color(0f, 0f, 0f, 0.25f);
-                    shadowSR.sortingOrder = sr.sortingOrder - 1;
+                    treesByTile[new Vector2Int(x, y)] = treeGO;
+                    treeCount++;
                 }
             }
 
-            Debug.Log($"TreePlacer: Placed {treeContainer.transform.childCount} trees.");
+            Debug.Log($"TreePlacer: Placed {treeCount} trees.");
         }
     }
 }

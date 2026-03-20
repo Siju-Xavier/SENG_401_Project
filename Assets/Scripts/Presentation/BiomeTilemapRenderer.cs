@@ -2,38 +2,36 @@ namespace Presentation.MapGeneration
 {
     using UnityEngine;
     using UnityEngine.Tilemaps;
-    using BusinessLogic.MapGeneration;
+    using GameState;
     using ScriptableObjects;
 
     public class BiomeTilemapRenderer : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private Tilemap groundTilemap;
-        [SerializeField] private MapGenerator mapGenerator;
 
-        public void RenderMap()
+        private MapData mapData;
+
+        public void RenderMap(MapData data)
         {
-            if (mapGenerator == null || mapGenerator.BiomeGrid == null)
+            mapData = data;
+
+            if (data == null || data.BiomeGrid == null)
             {
-                Debug.LogWarning("BiomeTilemapRenderer: No biome grid to render. Generate the map first.");
+                Debug.LogWarning("BiomeTilemapRenderer: No biome grid to render.");
                 return;
             }
 
             groundTilemap.ClearAllTiles();
 
-            BiomeConfig[,] biomeGrid = mapGenerator.BiomeGrid;
-            int width = mapGenerator.mapWidth;
-            int height = mapGenerator.mapHeight;
-
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < data.Height; y++)
             {
-                for (int x = 0; x < width; x++)
+                for (int x = 0; x < data.Width; x++)
                 {
-                    BiomeConfig biome = biomeGrid[x, y];
+                    BiomeConfig biome = data.BiomeGrid[x, y];
                     if (biome != null && biome.DefaultTile != null)
                     {
-                        Vector3Int tilePos = new Vector3Int(x, y, 0);
-                        groundTilemap.SetTile(tilePos, biome.DefaultTile);
+                        groundTilemap.SetTile(new Vector3Int(x, y, 0), biome.DefaultTile);
                     }
                 }
             }
@@ -41,7 +39,7 @@ namespace Presentation.MapGeneration
 
         public void SetTileBurning(int x, int y)
         {
-            BiomeConfig biome = mapGenerator.GetBiomeAt(x, y);
+            BiomeConfig biome = GetBiomeAt(x, y);
             if (biome != null && biome.BurningTile != null)
             {
                 groundTilemap.SetTile(new Vector3Int(x, y, 0), biome.BurningTile);
@@ -50,11 +48,18 @@ namespace Presentation.MapGeneration
 
         public void SetTileDefault(int x, int y)
         {
-            BiomeConfig biome = mapGenerator.GetBiomeAt(x, y);
+            BiomeConfig biome = GetBiomeAt(x, y);
             if (biome != null && biome.DefaultTile != null)
             {
                 groundTilemap.SetTile(new Vector3Int(x, y, 0), biome.DefaultTile);
             }
+        }
+
+        private BiomeConfig GetBiomeAt(int x, int y)
+        {
+            if (mapData?.BiomeGrid == null || x < 0 || x >= mapData.Width || y < 0 || y >= mapData.Height)
+                return null;
+            return mapData.BiomeGrid[x, y];
         }
     }
 }

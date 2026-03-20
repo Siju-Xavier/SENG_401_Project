@@ -1,33 +1,28 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using BusinessLogic.MapGeneration;
+using Core;
 
 namespace Presentation.MapGeneration.Editor
 {
-    [CustomEditor(typeof(MapGenerator))]
+    [CustomEditor(typeof(MapGenerationOrchestrator))]
     public class MapGeneratorEditor : UnityEditor.Editor
     {
-    public override void OnInspectorGUI()
-    {
-        MapGenerator mapGen = (MapGenerator)target;
-
-        // If any value in the inspector changes...
-        if (DrawDefaultInspector())
+        public override void OnInspectorGUI()
         {
-            // ...and "autoUpdate" is true, regenerate the map immediately
-            if (mapGen.autoUpdate)
+            MapGenerationOrchestrator orchestrator = (MapGenerationOrchestrator)target;
+
+            if (DrawDefaultInspector())
             {
-                mapGen.GenerateMap();
+                if (orchestrator.autoUpdate)
+                {
+                    orchestrator.GenerateWorld();
+                }
+            }
+
+            if (GUILayout.Button("Generate"))
+            {
+                orchestrator.GenerateWorld();
             }
         }
-
-        // Add a manual "Generate" button to the inspector
-        if (GUILayout.Button("Generate"))
-        {
-            mapGen.GenerateMap();
-        }
     }
-}
 }

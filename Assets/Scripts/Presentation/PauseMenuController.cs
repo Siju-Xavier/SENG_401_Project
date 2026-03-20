@@ -60,12 +60,28 @@ namespace Presentation
 
         private void Update()
         {
-            Keyboard kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame)
+            // NEW Input System check
+            bool escNew = false;
+            if (UnityEngine.InputSystem.Keyboard.current != null)
             {
-                if (isPaused) ResumeGame();
-                else          PauseGame();
+                escNew = UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame;
+                if (escNew) Debug.Log("[PauseMenu] NEW Input System detected ESCAPE");
             }
+
+            // OLD Input System check (fallback)
+            bool escOld = Input.GetKeyDown(KeyCode.Escape);
+            if (escOld) Debug.Log("[PauseMenu] OLD Input System detected ESCAPE");
+
+            if (escNew || escOld)
+            {
+                TogglePause();
+            }
+        }
+
+        private void TogglePause()
+        {
+            if (isPaused) ResumeGame();
+            else          PauseGame();
         }
 
         // ── Public Methods (wired to buttons) ────────────────────────────────
@@ -73,9 +89,10 @@ namespace Presentation
         public void PauseGame()
         {
             SetPaused(true);
+            Debug.Log("HERE HERE");
             var gm = FindObjectOfType<GameManager>();
             if (gm != null) gm.PauseGame();
-            else Time.timeScale = 0f;
+            else throw new System.Exception("GameManager not found in scene!");
         }
 
         public void ResumeGame()
@@ -83,7 +100,7 @@ namespace Presentation
             SetPaused(false);
             var gm = FindObjectOfType<GameManager>();
             if (gm != null) gm.ResumeGame();
-            else Time.timeScale = 1f;
+            else throw new System.Exception("GameManager not found in scene!");
         }
 
         public void SaveGame()

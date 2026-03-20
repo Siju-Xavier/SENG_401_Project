@@ -3,24 +3,22 @@ namespace Presentation.MapGeneration
     using UnityEngine;
     using UnityEngine.Tilemaps;
     using GameState;
+    using ScriptableObjects;
 
     public class CityPlacer : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private Tilemap groundTilemap;
+        [SerializeField] private TreePlacer treePlacer;
 
-        [Header("City Sprites")]
-        [Tooltip("Assign City_1, City_2, City_3 sprites here")]
-        [SerializeField] private Sprite[] citySprites;
-
-        [Header("City Display")]
-        [SerializeField] private float citySpriteScale = 3f;
+        [Header("City Configs")]
+        [Tooltip("Assign CityConfig assets here — one per city variation")]
+        [SerializeField] private CityConfig[] cityConfigs;
 
         private GameObject cityContainer;
 
         public void ClearCities()
         {
-            // Destroy tracked container
             if (cityContainer != null)
             {
                 if (Application.isPlaying) Destroy(cityContainer);
@@ -28,16 +26,11 @@ namespace Presentation.MapGeneration
                 cityContainer = null;
             }
 
-            // Also destroy any leftover Cities objects from previous editor sessions
             while (true)
             {
                 var leftover = transform.Find("Cities");
                 if (leftover == null) break;
-                
-                // Rename it so transform.Find doesn't find the exact same object on the next iteration
-                // since Destroy() doesn't immediately remove the object from the hierarchy in Play mode.
-                leftover.name = "Cities_Destroying"; 
-                
+                leftover.name = "Cities_Destroying";
                 if (Application.isPlaying) Destroy(leftover.gameObject);
                 else DestroyImmediate(leftover.gameObject);
             }
@@ -51,6 +44,7 @@ namespace Presentation.MapGeneration
             cityContainer.transform.SetParent(transform);
 
             if (gridSystem == null || gridSystem.Regions == null) return;
+            if (cityConfigs == null || cityConfigs.Length == 0) return;
 
             for (int i = 0; i < gridSystem.Regions.Count; i++)
             {
@@ -58,18 +52,15 @@ namespace Presentation.MapGeneration
                 City city = region.City;
                 if (city == null) continue;
 
-                // Pick a sprite (cycle through available sprites)
-                Sprite sprite = null;
-                if (citySprites != null && citySprites.Length > 0)
-                    sprite = citySprites[i % citySprites.Length];
-
-                if (sprite == null)
+                // Pick a config (cycle through available configs)
+                CityConfig config = cityConfigs[i % cityConfigs.Length];
+                if (config == null || config.CityPrefab == null)
                 {
-                    Debug.LogWarning($"CityPlacer: No sprite for city {city.CityName}");
+                    Debug.LogWarning($"CityPlacer: No config/prefab for city {city.CityName}");
                     continue;
                 }
 
-                // Convert tile position to world position using the tilemap
+                // Convert tile position to world position
                 Vector3 worldPos;
                 if (groundTilemap != null)
                 {
@@ -81,17 +72,38 @@ namespace Presentation.MapGeneration
                     worldPos = new Vector3(city.TileX, city.TileY, 0);
                 }
 
-                // Create city GameObject with SpriteRenderer
-                var cityGO = new GameObject(city.CityName);
-                cityGO.transform.SetParent(cityContainer.transform);
-                cityGO.transform.position = new Vector3(worldPos.x, worldPos.y, -1f); // render above tiles
+                // Instantiate city prefab
+                var cityGO = Instantiate(config.CityPrefab, cityContainer.transform);
+                cityGO.name = city.CityName;
+                cityGO.transform.position = new Vector3(worldPos.x, worldPos.y, -1f);
+                cityGO.transform.localScale = Vector3.one * config.PrefabScale;
 
-                var sr = cityGO.AddComponent<SpriteRenderer>();
-                sr.sprite = sprite;
-                sr.sortingOrder = 10; // above ground tilemap
-                cityGO.transform.localScale = Vector3.one * citySpriteScale;
+                // Clear decorations (trees, etc.) under the city footprint
+                // Footprint is centered on the city tile
+                int halfW = config.FootprintWidth / 2;
+                int halfH = config.FootprintHeight / 2;
+                int startX = city.TileX - halfW;
+                int startY = city.TileY - halfH;
 
-                Debug.Log($"Placed city '{city.CityName}' at tile ({city.TileX}, {city.TileY}) -> world {worldPos}");
+                if (treePlacer != null)
+                {
+                    treePlacer.RemoveTreesInArea(startX, startY, config.FootprintWidth, config.FootprintHeight);
+                }
+
+                // Mark tiles as occupied by this region
+                for (int ty = startY; ty < startY + config.FootprintHeight; ty++)
+                {
+                    for (int tx = startX; tx < startX + config.FootprintWidth; tx++)
+                    {
+                        GameState.Tile tile = gridSystem.GetTileAt(tx, ty);
+                        if (tile != null)
+                        {
+                            region.AddTile(tile);
+                        }
+                    }
+                }
+
+                Debug.Log($"Placed city '{city.CityName}' at ({city.TileX},{city.TileY}), footprint {config.FootprintWidth}x{config.FootprintHeight}");
             }
         }
     }

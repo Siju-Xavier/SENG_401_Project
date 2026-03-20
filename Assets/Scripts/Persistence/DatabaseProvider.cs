@@ -41,9 +41,12 @@ namespace Persistence
         /// <summary>True once the URL has been set to a real value.</summary>
         public bool IsConfigured { get; private set; }
 
-        // ── IStorageProvider simple cache ─────────────────────────────────
-        private string _lastStored;
-        private string _lastLoaded;
+        // ── IStorageProvider (real cloud operations) ─────────────────────
+        private string _cachedData;
+        private int _activePlayerId = 1;
+
+        /// <summary>Set the player ID for cloud operations.</summary>
+        public void SetPlayerId(int id) => _activePlayerId = id;
 
         private void Awake()
         {
@@ -57,15 +60,57 @@ namespace Persistence
 
         // ── IStorageProvider ─────────────────────────────────────────────
 
+        /// <summary>
+        /// Preload the latest cloud save into the local cache so that
+        /// subsequent Load() calls return it immediately.
+        /// </summary>
         public void Connect()
         {
-            // Stateless REST — no persistent connection needed.
-            // IsConfigured is set in Awake() based on Inspector values.
+            if (!IsConfigured) return;
+            StartCoroutine(PreloadLatestSave());
         }
 
-        public void Store(string data) => _lastStored = data;
-        public string Load() => _lastLoaded ?? _lastStored ?? string.Empty;
-        public void HardReloadOrDeleteCurrentCopy() { _lastStored = null; _lastLoaded = null; }
+        private IEnumerator PreloadLatestSave()
+        {
+            string rawJson = null;
+            yield return LoadLatestSave(_activePlayerId, json => rawJson = json);
+
+            if (!string.IsNullOrEmpty(rawJson))
+            {
+                // Extract game_state JSON from the Supabase response array
+                _cachedData = ExtractGameState(rawJson);
+                Debug.Log("[DB] Cloud save preloaded into cache.");
+            }
+        }
+
+        /// <summary>
+        /// Cache the data locally AND fire a background coroutine to upload
+        /// it to Supabase. This lets SaveManager call storage.Store(json)
+        /// without knowing it's a cloud provider.
+        /// </summary>
+        public void Store(string data)
+        {
+            _cachedData = data;
+            if (IsConfigured)
+                StartCoroutine(BackgroundUpload(data));
+        }
+
+        private IEnumerator BackgroundUpload(string gameStateJson)
+        {
+            yield return SaveGame(_activePlayerId, gameStateJson, ok =>
+            {
+                if (ok) Debug.Log("[DB] Background cloud upload succeeded.");
+                else    Debug.LogWarning("[DB] Background cloud upload failed.");
+            });
+        }
+
+        /// <summary>
+        /// Return the cached cloud data (preloaded at Connect() time or
+        /// cached from the last Store() call).
+        /// </summary>
+        public string Load() => _cachedData ?? string.Empty;
+
+        public void HardReloadOrDeleteCurrentCopy() { _cachedData = null; }
 
         // ── Helper: Build Request ────────────────────────────────────────
 
@@ -447,6 +492,37 @@ namespace Persistence
         }
 
         // ── Utility ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Extract the "game_state" JSON object from a Supabase REST response.
+        /// Supabase returns: [{ ..., "game_state": { ... }, ... }]
+        /// </summary>
+        private static string ExtractGameState(string rawJson)
+        {
+            if (string.IsNullOrEmpty(rawJson)) return string.Empty;
+
+            try
+            {
+                int gsStart = rawJson.IndexOf("\"game_state\":", StringComparison.Ordinal);
+                if (gsStart < 0) return rawJson; // Not a Supabase array — return as-is
+
+                int jsonStart = rawJson.IndexOf('{', gsStart);
+                if (jsonStart < 0) return rawJson;
+
+                int depth = 0, jsonEnd = jsonStart;
+                for (int i = jsonStart; i < rawJson.Length; i++)
+                {
+                    if      (rawJson[i] == '{') depth++;
+                    else if (rawJson[i] == '}') { depth--; if (depth == 0) { jsonEnd = i; break; } }
+                }
+
+                return rawJson.Substring(jsonStart, jsonEnd - jsonStart + 1);
+            }
+            catch
+            {
+                return rawJson;
+            }
+        }
 
         private static string EscapeJson(string value)
         {

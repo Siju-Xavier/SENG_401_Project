@@ -1,11 +1,21 @@
-namespace Presentation {
+// ============================================================================
+// PauseMenuController.cs — In-game pause menu (ESC key or Pause button)
+// ============================================================================
+// Attach to any persistent GameObject in the Game scene.
+// Auto-finds PauseButton and PausePanel by name if not set in the Inspector.
+// ============================================================================
+
+namespace Presentation
+{
     using Core;
     using UnityEngine;
     using UnityEngine.UI;
     using UnityEngine.InputSystem;
     using UnityEngine.SceneManagement;
 
-    public class PauseMenuController : MonoBehaviour {
+    public class PauseMenuController : MonoBehaviour
+    {
+        // ── Inspector References ─────────────────────────────────────────────
         [SerializeField] private GameObject pauseButton;
         [SerializeField] private GameObject pausePanel;
         [SerializeField] private Button pauseBtn;
@@ -15,71 +25,95 @@ namespace Presentation {
 
         private bool isPaused;
 
-        private void Start() {
+        // ── Unity Lifecycle ──────────────────────────────────────────────────
+        private void Start()
+        {
             // Auto-find objects if not assigned in Inspector
             var canvas = GameObject.Find("Canvas");
-            if (canvas != null) {
+            if (canvas != null)
+            {
                 if (pauseButton == null) pauseButton = canvas.transform.Find("PauseButton")?.gameObject;
-                if (pausePanel == null) pausePanel = canvas.transform.Find("PausePanel")?.gameObject;
+                if (pausePanel  == null) pausePanel  = canvas.transform.Find("PausePanel")?.gameObject;
             }
 
             if (pauseButton != null && pauseBtn == null)
                 pauseBtn = pauseButton.GetComponent<Button>();
-            if (pausePanel != null) {
-                if (resumeBtn == null) resumeBtn = pausePanel.transform.Find("ResumeButton")?.GetComponent<Button>();
-                if (saveBtn == null) saveBtn = pausePanel.transform.Find("SaveButton")?.GetComponent<Button>();
-                if (quitBtn == null) quitBtn = pausePanel.transform.Find("QuitButton")?.GetComponent<Button>();
+
+            if (pausePanel != null)
+            {
+                if (resumeBtn == null) resumeBtn = pausePanel.transform.Find("PausePanelContainer/ResumeButton")?.GetComponent<Button>()
+                                                ?? pausePanel.transform.Find("ResumeButton")?.GetComponent<Button>();
+                if (saveBtn   == null) saveBtn   = pausePanel.transform.Find("PausePanelContainer/SaveButton")?.GetComponent<Button>()
+                                                ?? pausePanel.transform.Find("SaveButton")?.GetComponent<Button>();
+                if (quitBtn   == null) quitBtn   = pausePanel.transform.Find("PausePanelContainer/QuitButton")?.GetComponent<Button>()
+                                                ?? pausePanel.transform.Find("QuitButton")?.GetComponent<Button>();
             }
 
             // Wire button clicks
-            if (pauseBtn != null) pauseBtn.onClick.AddListener(PauseGame);
+            if (pauseBtn  != null) pauseBtn.onClick.AddListener(PauseGame);
             if (resumeBtn != null) resumeBtn.onClick.AddListener(ResumeGame);
-            if (saveBtn != null) saveBtn.onClick.AddListener(SaveGame);
-            if (quitBtn != null) quitBtn.onClick.AddListener(QuitGame);
+            if (saveBtn   != null) saveBtn.onClick.AddListener(SaveGame);
+            if (quitBtn   != null) quitBtn.onClick.AddListener(QuitGame);
 
             SetPaused(false);
         }
 
-        private void Update() {
+        private void Update()
+        {
             Keyboard kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame) {
+            if (kb != null && kb.escapeKey.wasPressedThisFrame)
+            {
                 if (isPaused) ResumeGame();
-                else PauseGame();
+                else          PauseGame();
             }
         }
 
-        private void PauseGame() {
+        // ── Public Methods (wired to buttons) ────────────────────────────────
+
+        public void PauseGame()
+        {
             SetPaused(true);
             var gm = FindObjectOfType<GameManager>();
             if (gm != null) gm.PauseGame();
             else Time.timeScale = 0f;
         }
 
-        private void ResumeGame() {
+        public void ResumeGame()
+        {
             SetPaused(false);
             var gm = FindObjectOfType<GameManager>();
             if (gm != null) gm.ResumeGame();
             else Time.timeScale = 1f;
         }
 
-        private void SaveGame() {
+        public void SaveGame()
+        {
             var saveManager = FindObjectOfType<Persistence.SaveManager>();
-            if (saveManager != null) {
+            if (saveManager != null)
+            {
                 saveManager.SaveFile();
-                Debug.Log("Game Saved!");
-            } else {
-                Debug.LogWarning("SaveManager not found in scene!");
+                Debug.Log("[PauseMenu] Game Saved!");
+                // Show a brief UI alert if UIManager is available
+                FindObjectOfType<UIManager>()?.ShowAlert("Game Saved!");
+            }
+            else
+            {
+                Debug.LogWarning("[PauseMenu] SaveManager not found in scene!");
             }
         }
 
-        private void QuitGame() {
+        public void QuitGame()
+        {
             Time.timeScale = 1f;
             SceneManager.LoadScene("MainMenu");
         }
 
-        private void SetPaused(bool paused) {
+        // ── Private Helpers ──────────────────────────────────────────────────
+
+        private void SetPaused(bool paused)
+        {
             isPaused = paused;
-            if (pausePanel != null) pausePanel.SetActive(paused);
+            if (pausePanel  != null) pausePanel.SetActive(paused);
             if (pauseButton != null) pauseButton.SetActive(!paused);
         }
     }

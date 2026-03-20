@@ -137,10 +137,17 @@ namespace Persistence
         /// <summary>Save game data to a local JSON file via LocalFileProvider.</summary>
         public void SaveFile()
         {
-            // Subclasses / callers should build GameSaveData and pass it
-            // through Serialize() → storage.Store().
-            // This is a placeholder for when GameManager integration is added.
-            Debug.Log("[SaveManager] SaveFile() called — awaiting GameManager integration.");
+            var gameManager = FindObjectOfType<Core.GameManager>();
+            if (gameManager == null)
+            {
+                Debug.LogWarning("[SaveManager] GameManager not found — cannot build save data.");
+                return;
+            }
+
+            GameSaveData data = gameManager.BuildSaveData();
+            string json = Serialize(data);
+            storage.Store(json);
+            Debug.Log("[SaveManager] Game saved to local file.");
         }
 
         /// <summary>Load game data from a local file.</summary>

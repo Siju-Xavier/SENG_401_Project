@@ -6,6 +6,7 @@ namespace Core {
     using BusinessLogic.MapGeneration;
     using GameState;
     using Persistence;
+    using Presentation;
 
     public class GameManager : MonoBehaviour {
         [SerializeField] private ResourceManager resourceManager;

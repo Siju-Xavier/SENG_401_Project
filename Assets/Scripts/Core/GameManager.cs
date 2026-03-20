@@ -33,10 +33,9 @@ namespace Core {
 
             // Check if we were asked to restore a save (from MainMenuManager.ContinueGame)
             if (MainMenuManager.ShouldLoadSave && saveManager != null) {
-                Debug.Log("[GameManager] ShouldLoadSave flag set — loading save data.");
-                StartCoroutine(saveManager.LoadBestAvailable(playerId, save => {
-                    LoadGame(save);
-                }));
+                Debug.Log("[GameManager] ShouldLoadSave flag set — loading via active provider.");
+                var save = saveManager.LoadFile();
+                LoadGame(save);
             } else {
                 StartGame();
             }
@@ -75,11 +74,9 @@ namespace Core {
                     gridSystem != null ? gridSystem.Regions.Count : 0));
             }
 
-            // Trigger a final save
+            // Final save via the active IStorageProvider (local or cloud)
             if (saveManager != null) {
-                var saveData = BuildSaveData();
-                StartCoroutine(saveManager.SaveToCloud(playerId, saveData,
-                    displayName: "Game Over Save"));
+                saveManager.SaveFile();
             }
         }
 

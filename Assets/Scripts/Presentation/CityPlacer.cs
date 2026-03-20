@@ -33,6 +33,11 @@ namespace Presentation.MapGeneration
             {
                 var leftover = transform.Find("Cities");
                 if (leftover == null) break;
+                
+                // Rename it so transform.Find doesn't find the exact same object on the next iteration
+                // since Destroy() doesn't immediately remove the object from the hierarchy in Play mode.
+                leftover.name = "Cities_Destroying"; 
+                
                 if (Application.isPlaying) Destroy(leftover.gameObject);
                 else DestroyImmediate(leftover.gameObject);
             }

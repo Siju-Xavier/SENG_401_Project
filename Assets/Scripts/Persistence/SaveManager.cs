@@ -1,8 +1,10 @@
 // ============================================================================
 // SaveManager.cs — Serialize / deserialize the full game state to JSON
 // ============================================================================
-// Supports both local file saves (LocalFileProvider) and cloud saves
-// (DatabaseProvider). Acts as the bridge between game systems and storage.
+// Uses the Strategy Pattern (IStorageProvider) so the caller does not need
+// to know whether data is saved locally or to the cloud.
+// Both LocalFileProvider and DatabaseProvider implement IStorageProvider.
+// The active backend is selected via SetStorageMode().
 // ============================================================================
 
 using System;
@@ -13,14 +15,28 @@ using UnityEngine;
 namespace Persistence
 {
     /// <summary>
+    /// Storage mode: save to a local JSON file or to the cloud (Supabase).
+    /// </summary>
+    public enum StorageMode { Local, Cloud }
+
+    /// <summary>
     /// Converts the current in-memory game state into a JSON string for
-    /// persistence, and restores it back. Supports both local and cloud storage.
+    /// persistence, and restores it back.  Uses IStorageProvider (Strategy
+    /// Pattern) — the active backend can be swapped at runtime between
+    /// LocalFileProvider and DatabaseProvider.
     /// </summary>
     public class SaveManager : MonoBehaviour
     {
-        // ── Storage backend ──────────────────────────────────────────────
-        private string filePathGameFolder;
-        private IStorageProvider storage;
+        // ── Storage backends ─────────────────────────────────────────────
+        [Header("Storage")]
+        [SerializeField] private StorageMode storageMode = StorageMode.Local;
+
+        private IStorageProvider storage;              // active backend
+        private LocalFileProvider   localProvider;     // always available
+        private DatabaseProvider    cloudProvider;     // may be null
+
+        /// <summary>Current active storage mode.</summary>
+        public StorageMode CurrentMode => storageMode;
 
         // ── Serialisable snapshot classes ─────────────────────────────────
 
@@ -118,10 +134,52 @@ namespace Persistence
 
         private void Awake()
         {
-            // Default to local file storage; switch to DatabaseProvider
-            // when cloud is configured.
-            storage = new LocalFileProvider();
-            storage.Connect();
+            // Create both providers
+            localProvider = new LocalFileProvider();
+            localProvider.Connect();
+
+            cloudProvider = DatabaseProvider.Instance;
+
+            // Set the active backend based on the Inspector setting
+            ApplyStorageMode();
+        }
+
+        // ── Storage Mode Switching ───────────────────────────────────────
+
+        /// <summary>
+        /// Switch the active storage backend at runtime.
+        /// Matches the UML: SaveManager --> IStorageProvider (swappable).
+        /// </summary>
+        public void SetStorageMode(StorageMode mode)
+        {
+            storageMode = mode;
+            ApplyStorageMode();
+            Debug.Log($"[SaveManager] Storage mode set to {storageMode}.");
+        }
+
+        private void ApplyStorageMode()
+        {
+            switch (storageMode)
+            {
+                case StorageMode.Cloud:
+                    if (cloudProvider != null && cloudProvider.IsConfigured)
+                    {
+                        storage = cloudProvider;
+                        storage.Connect();
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[SaveManager] Cloud not configured — falling back to Local.");
+                        storageMode = StorageMode.Local;
+                        storage = localProvider;
+                    }
+                    break;
+
+                case StorageMode.Local:
+                default:
+                    storage = localProvider;
+                    break;
+            }
         }
 
         // ── Serialization ────────────────────────────────────────────────
@@ -132,148 +190,84 @@ namespace Persistence
         /// <summary>Convert a JSON string back to a save-data object.</summary>
         public GameSaveData Deserialize(string json) => JsonUtility.FromJson<GameSaveData>(json);
 
-        // ── Local File Save/Load ─────────────────────────────────────────
+        // ── Save / Load (goes through the active IStorageProvider) ───────
 
-        /// <summary>Save game data to a local JSON file via LocalFileProvider.</summary>
+        /// <summary>
+        /// Save game state through the active IStorageProvider.
+        /// Works identically for local and cloud — the provider handles it.
+        /// </summary>
         public void SaveFile()
         {
-            // Subclasses / callers should build GameSaveData and pass it
-            // through Serialize() → storage.Store().
-            // This is a placeholder for when GameManager integration is added.
-            Debug.Log("[SaveManager] SaveFile() called — awaiting GameManager integration.");
+            var gameManager = FindObjectOfType<Core.GameManager>();
+            if (gameManager == null)
+            {
+                Debug.LogWarning("[SaveManager] GameManager not found — cannot build save data.");
+                return;
+            }
+
+            GameSaveData data = gameManager.BuildSaveData();
+            string json = Serialize(data);
+            storage.Store(json);
+            Debug.Log($"[SaveManager] Game saved via {storageMode} provider.");
         }
 
-        /// <summary>Load game data from a local file.</summary>
-        public void LoadFile(string fileName)
+        /// <summary>
+        /// Load game state through the active IStorageProvider.
+        /// Returns the deserialised GameSaveData, or null.
+        /// </summary>
+        public GameSaveData LoadFile()
         {
             string json = storage.Load();
             if (!string.IsNullOrEmpty(json))
             {
-                Debug.Log("[SaveManager] Loaded from local storage.");
+                Debug.Log($"[SaveManager] Loaded save data via {storageMode} provider.");
+                return Deserialize(json);
             }
-            else
-            {
-                Debug.LogWarning("[SaveManager] No save data found.");
-            }
+
+            Debug.LogWarning("[SaveManager] No save data found.");
+            return null;
         }
 
-        /// <summary>Transfer items between storage backends.</summary>
+        /// <summary>
+        /// Transfer save data between providers (local ↔ cloud).
+        /// Copies the data from the INACTIVE provider to the ACTIVE one,
+        /// or vice-versa based on the direction parameter.
+        /// </summary>
         public void TransferItems()
         {
-            // Placeholder for transferring save data between local ↔ cloud.
-        }
-
-        // ── Cloud Save / Load (DatabaseProvider) ────────────────────────
-
-        /// <summary>
-        /// Coroutine: serialises game data and uploads it to Supabase.
-        /// No-op if DatabaseProvider is not configured (offline mode).
-        /// </summary>
-        public IEnumerator SaveToCloud(int playerId, GameSaveData data,
-            Action<bool> onComplete = null,
-            string slotName = "default", string displayName = "")
-        {
-            var db = DatabaseProvider.Instance;
-            if (db == null || !db.IsConfigured)
+            if (cloudProvider == null || !cloudProvider.IsConfigured)
             {
-                Debug.Log("[SaveManager] DatabaseProvider not configured — skipping cloud save.");
-                onComplete?.Invoke(false);
-                yield break;
+                Debug.LogWarning("[SaveManager] Cannot transfer — cloud provider not configured.");
+                return;
             }
 
-            string json = Serialize(data);
-
-            bool success = false;
-            yield return db.SaveGame(playerId, json, ok => success = ok,
-                slotName, displayName,
-                data.currentRound, data.cityCount, data.mapWidth, data.mapHeight);
-
-            if (success)
-                Debug.Log($"[SaveManager] Cloud save complete (slot: {slotName}).");
-            else
-                Debug.LogWarning("[SaveManager] Cloud save failed — local file save is still intact.");
-
-            onComplete?.Invoke(success);
-        }
-
-        /// <summary>
-        /// Coroutine: downloads the most recent cloud save and deserialises it.
-        /// No-op if DatabaseProvider is not configured.
-        /// </summary>
-        public IEnumerator LoadFromCloud(int playerId, Action<GameSaveData> onComplete = null)
-        {
-            var db = DatabaseProvider.Instance;
-            if (db == null || !db.IsConfigured)
+            if (storageMode == StorageMode.Local)
             {
-                Debug.Log("[SaveManager] DatabaseProvider not configured — skipping cloud load.");
-                onComplete?.Invoke(null);
-                yield break;
-            }
-
-            string rawJson = null;
-            yield return db.LoadLatestSave(playerId, json => rawJson = json);
-
-            if (string.IsNullOrEmpty(rawJson))
-            {
-                Debug.LogWarning("[SaveManager] Cloud load returned no data.");
-                onComplete?.Invoke(null);
-                yield break;
-            }
-
-            // Supabase REST returns an array: [{ ..., "game_state": {...} }]
-            // Extract and deserialise the "game_state" object.
-            try
-            {
-                int gsStart = rawJson.IndexOf("\"game_state\":", StringComparison.Ordinal);
-                if (gsStart < 0) throw new Exception("game_state key not found in response.");
-
-                int jsonStart = rawJson.IndexOf('{', gsStart);
-                if (jsonStart < 0) throw new Exception("game_state JSON object not found.");
-
-                int depth = 0, jsonEnd = jsonStart;
-                for (int i = jsonStart; i < rawJson.Length; i++)
+                // Transfer local → cloud
+                string localData = localProvider.Load();
+                if (!string.IsNullOrEmpty(localData))
                 {
-                    if      (rawJson[i] == '{') depth++;
-                    else if (rawJson[i] == '}') { depth--; if (depth == 0) { jsonEnd = i; break; } }
+                    cloudProvider.Store(localData);
+                    Debug.Log("[SaveManager] Transferred save data: Local → Cloud.");
                 }
-
-                string stateJson = rawJson.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                GameSaveData save = Deserialize(stateJson);
-
-                Debug.Log("[SaveManager] Cloud load successful.");
-                onComplete?.Invoke(save);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[SaveManager] Failed to parse cloud save JSON: {ex.Message}");
-                onComplete?.Invoke(null);
-            }
-        }
-
-        /// <summary>
-        /// Coroutine: try cloud load first; fall back to local file if unavailable.
-        /// Primary "Load Game" entry point.
-        /// </summary>
-        public IEnumerator LoadBestAvailable(int playerId, Action<GameSaveData> onComplete)
-        {
-            GameSaveData cloudData = null;
-            yield return LoadFromCloud(playerId, data => cloudData = data);
-
-            if (cloudData != null)
-            {
-                onComplete?.Invoke(cloudData);
-                yield break;
-            }
-
-            Debug.Log("[SaveManager] Falling back to local save file.");
-            string localJson = storage.Load();
-            if (!string.IsNullOrEmpty(localJson))
-            {
-                onComplete?.Invoke(Deserialize(localJson));
+                else
+                {
+                    Debug.LogWarning("[SaveManager] No local data to transfer.");
+                }
             }
             else
             {
-                onComplete?.Invoke(null);
+                // Transfer cloud → local
+                string cloudData = cloudProvider.Load();
+                if (!string.IsNullOrEmpty(cloudData))
+                {
+                    localProvider.Store(cloudData);
+                    Debug.Log("[SaveManager] Transferred save data: Cloud → Local.");
+                }
+                else
+                {
+                    Debug.LogWarning("[SaveManager] No cloud data to transfer.");
+                }
             }
         }
 
@@ -281,5 +275,12 @@ namespace Persistence
 
         /// <summary>Check whether a local save file exists.</summary>
         public static bool HasLocalSave() => LocalFileProvider.HasLocalSave();
+
+        /// <summary>Delete the current save via the active provider.</summary>
+        public void DeleteCurrentSave()
+        {
+            storage.HardReloadOrDeleteCurrentCopy();
+            Debug.Log($"[SaveManager] Save deleted via {storageMode} provider.");
+        }
     }
 }

@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73e5aca3f99e50b4ba5c21f8f306f834, type: 3}
+  m_Name: MountainBiome
+  m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.BiomeConfig
+  spreadMultiplier: 0
+  baseMoisture: 0
+  defaultSprite: {fileID: 0}
+  burningSprite: {fileID: 0}
+  defaultTile: {fileID: 11400000, guid: ea72b503ec34843c29674ec7f6f5062a, type: 2}
+  burningTile: {fileID: 0}
+  maxHeight: 1

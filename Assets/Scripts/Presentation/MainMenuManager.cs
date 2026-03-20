@@ -6,13 +6,16 @@
 // Drag the Settings and No-Save panels into the Inspector fields.
 // ============================================================================
 
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
 namespace Presentation
 {
-    using UnityEngine;
-    using UnityEngine.SceneManagement;
-
     public class MainMenuManager : MonoBehaviour
     {
+        /// <summary>Flag checked by GameManager on scene load to restore save.</summary>
+        public static bool ShouldLoadSave { get; private set; }
+
         // ── Inspector References ─────────────────────────────────────────────
         [Header("Panels")]
         [Tooltip("The Settings overlay panel. Set inactive by default in the scene.")]
@@ -37,6 +40,7 @@ namespace Presentation
         public void StartNewGame()
         {
             Debug.Log("[MainMenu] Starting new game...");
+            ShouldLoadSave = false;
             SceneManager.LoadScene("Game");
         }
 
@@ -49,6 +53,7 @@ namespace Presentation
             if (Persistence.SaveManager.HasLocalSave())
             {
                 Debug.Log("[MainMenu] Save found — loading game...");
+                ShouldLoadSave = true;
                 // SaveManager will restore state once the Game scene starts.
                 SceneManager.LoadScene("Game");
             }
@@ -75,8 +80,6 @@ namespace Presentation
 
         /// <summary>
         /// "Quit" button — exits the application.
-        /// Note: Application.Quit() has no effect inside the Unity Editor;
-        /// a log message is printed so you can verify the call was reached.
         /// </summary>
         public void QuitGame()
         {
@@ -99,3 +102,5 @@ namespace Presentation
         }
     }
 }
+
+

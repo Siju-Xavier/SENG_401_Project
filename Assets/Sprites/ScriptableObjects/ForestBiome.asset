@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73e5aca3f99e50b4ba5c21f8f306f834, type: 3}
+  m_Name: ForestBiome
+  m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.BiomeConfig
+  spreadMultiplier: 0
+  baseMoisture: 0
+  defaultSprite: {fileID: 0}
+  burningSprite: {fileID: 0}
+  defaultTile: {fileID: 11400000, guid: 5486332d5bc764e61a0a3650e3967800, type: 2}
+  burningTile: {fileID: 0}
+  vegetationSprites:
+  - {fileID: -231948628125939053, guid: d152bd5ed098b4e45b9f5ddc531fa38b, type: 3}
+  - {fileID: -6170301780317497036, guid: 00cac33c0dae81b438e2694056b84a48, type: 3}
+  - {fileID: -5172981082200280501, guid: 62374b61af088ae439faf5eb684b5719, type: 3}
+  - {fileID: 8084239964029314362, guid: e6e90ca242301d24884aae69a58eefcf, type: 3}
+  - {fileID: -8645033144741102643, guid: 586c2d19aa8d4d74fae0c51e7a262eca, type: 3}
+  maxHeight: 0.8

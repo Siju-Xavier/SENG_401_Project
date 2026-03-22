@@ -85,9 +85,21 @@ namespace Presentation.MapGeneration
                 int startX = city.TileX - halfW;
                 int startY = city.TileY - halfH;
 
+                // Clear vegetation and ground tiles under the city footprint
                 if (treePlacer != null)
                 {
                     treePlacer.RemoveTreesInArea(startX, startY, config.FootprintWidth, config.FootprintHeight);
+                }
+
+                if (groundTilemap != null)
+                {
+                    for (int ty = startY; ty < startY + config.FootprintHeight; ty++)
+                    {
+                        for (int tx = startX; tx < startX + config.FootprintWidth; tx++)
+                        {
+                            groundTilemap.SetTile(new Vector3Int(tx, ty, 0), null);
+                        }
+                    }
                 }
 
                 // Mark tiles as occupied by this region

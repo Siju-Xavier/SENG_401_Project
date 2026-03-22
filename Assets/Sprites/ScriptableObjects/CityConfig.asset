@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.CityConfig
   cityPrefab: {fileID: 5774944296135811089, guid: 9b77234cb684dec42b606c649d8d83a3, type: 3}
   prefabScale: 1
-  footprintWidth: 3
-  footprintHeight: 3
-  allowedBiomes: []
+  footprintWidth: 4
+  footprintHeight: 4
+  allowedBiomes:
+  - {fileID: 11400000, guid: 58c48e90a9944430c8d99e30fab15ec9, type: 2}
+  - {fileID: 11400000, guid: 3b5251374bd904841ba72281a21fd9a4, type: 2}
+  - {fileID: 11400000, guid: 8f0eeac3c4a304b46ac48c754e826d2d, type: 2}

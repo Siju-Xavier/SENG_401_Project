@@ -48,7 +48,7 @@ namespace Core {
             currentTick = 0;
             currentRound = 1;
 
-            if (mapOrchestrator != null || mapGenerator != null) {
+            if (mapOrchestrator != null) {
                 StartCoroutine(WaitForMapAndStartFires());
             } else {
                 FinishStartGame();
@@ -56,19 +56,11 @@ namespace Core {
         }
 
         private IEnumerator WaitForMapAndStartFires() {
-            if (mapOrchestrator != null) {
-                // Wait until MapGenerationOrchestrator has initialized the GridSystem
-                while (mapOrchestrator.GridSystem == null) {
-                    yield return null;
-                }
-                gridSystem = mapOrchestrator.GridSystem;
-            } else if (mapGenerator != null) {
-                // Wait until MapGenerator has initialized the GridSystem
-                while (mapGenerator.GridSystem == null) {
-                    yield return null;
-                }
-                gridSystem = mapGenerator.GridSystem;
+            // Wait until MapGenerationOrchestrator has initialized the GridSystem
+            while (mapOrchestrator.GridSystem == null) {
+                yield return null;
             }
+            gridSystem = mapOrchestrator.GridSystem;
             FinishStartGame();
         }
 
@@ -134,8 +126,8 @@ namespace Core {
 
             // Restore fires from save data and resume simulation
             if (fireEngine != null) {
-                if (mapGenerator != null)
-                    gridSystem = mapGenerator.GridSystem;
+                if (mapOrchestrator != null)
+                    gridSystem = mapOrchestrator.GridSystem;
 
                 if (gridSystem != null && save.activeFires != null) {
                     foreach (var fireSave in save.activeFires) {
@@ -165,7 +157,7 @@ namespace Core {
             var data = new SaveManager.GameSaveData {
                 currentTick  = currentTick,
                 currentRound = currentRound,
-                randomSeed   = mapGenerator != null ? mapGenerator.seed : 0,
+                randomSeed   = mapOrchestrator != null ? mapOrchestrator.Seed : 0,
                 mapWidth     = gridSystem != null ? gridSystem.Width  : 64,
                 mapHeight    = gridSystem != null ? gridSystem.Height : 64,
             };

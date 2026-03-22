@@ -16,6 +16,8 @@ namespace ScriptableObjects {
         [Header("Vegetation")]
         [Tooltip("Sprites to place on tiles of this biome (e.g., trees, shrubs)")]
         [SerializeField] private Sprite[] vegetationSprites;
+        [Tooltip("Sprite shown when vegetation is burning (optional — tree is removed if null)")]
+        [SerializeField] private Sprite burningVegetationSprite;
 
         [Header("Structures")]
         [Tooltip("Whether cities/structures can be placed on this biome")]
@@ -32,6 +34,7 @@ namespace ScriptableObjects {
         public TileBase DefaultTile => defaultTile;
         public TileBase BurningTile => burningTile;
         public Sprite[] VegetationSprites => vegetationSprites;
+        public Sprite BurningVegetationSprite => burningVegetationSprite;
         public bool AllowStructures => allowStructures;
         public float MaxHeight => maxHeight;
     }

@@ -26,7 +26,7 @@ namespace BusinessLogic.MapGeneration
 
         public MapData MapData => mapData;
 
-        public MapData GenerateNoiseAndBiomes()
+        public MapData GenerateNoiseAndBiomes(int seed)
         {
             mapData = new MapData
             {

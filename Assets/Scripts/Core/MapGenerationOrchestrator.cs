@@ -20,12 +20,18 @@ namespace Core
         [SerializeField] private GridSystem gridSystem;
         [SerializeField] private CityGenerator cityGenerator;
 
+        [Header("Seed")]
+        [SerializeField] private int seed;
+
         public bool autoUpdate;
 
         private MapData mapData;
 
         public GridSystem GridSystem => gridSystem;
         public MapData MapData => mapData;
+        public int Seed => seed;
+
+        public void SetSeed(int s) { seed = s; }
 
         private void Start()
         {
@@ -37,7 +43,7 @@ namespace Core
             Debug.Log("MapGenerationOrchestrator: START");
 
             // 1. Generate noise and biome data
-            mapData = mapGenerator.GenerateNoiseAndBiomes();
+            mapData = mapGenerator.GenerateNoiseAndBiomes(seed);
 
             // 2. Render biome tilemap
             if (biomeTilemapRenderer != null)

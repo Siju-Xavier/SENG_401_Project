@@ -5,11 +5,13 @@ namespace Presentation.MapGeneration
     using UnityEngine.Tilemaps;
     using GameState;
     using ScriptableObjects;
+    using TilemapTile = UnityEngine.Tilemaps.Tile;
 
     public class TreePlacer : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private Tilemap groundTilemap;
+        [SerializeField] private Tilemap vegetationTilemap;
 
         [Header("Density Thresholds")]
         [Range(0f, 1f)]
@@ -21,8 +23,23 @@ namespace Presentation.MapGeneration
         [SerializeField] private float spriteScale = 1f;
         [SerializeField] private int baseSortingOrder = 5;
 
-        private GameObject treeContainer;
-        private Dictionary<Vector2Int, GameObject> treesByTile = new Dictionary<Vector2Int, GameObject>();
+        private HashSet<Vector2Int> treeTiles = new HashSet<Vector2Int>();
+        private Dictionary<Sprite, TilemapTile> tileCache = new Dictionary<Sprite, TilemapTile>();
+        private MapData mapData;
+
+        private void OnEnable()
+        {
+            Core.EventBroker.Instance.Subscribe(Core.EventType.FireStarted, OnFireStarted);
+            Core.EventBroker.Instance.Subscribe(Core.EventType.FireSpread, OnFireSpread);
+            Core.EventBroker.Instance.Subscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+        }
+
+        private void OnDisable()
+        {
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.FireStarted, OnFireStarted);
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.FireSpread, OnFireSpread);
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+        }
 
         private void Update()
         {
@@ -32,87 +49,109 @@ namespace Presentation.MapGeneration
             }
         }
 
+        private void OnFireStarted(object data) => SwapToBurning(data as GameState.Tile);
+        private void OnFireSpread(object data) => SwapToBurning(data as GameState.Tile);
+        private void OnFireExtinguished(object data) => RemoveBurnedTree(data as GameState.Tile);
+
+        private void SwapToBurning(GameState.Tile tile)
+        {
+            if (tile == null || vegetationTilemap == null) return;
+
+            var key = new Vector2Int(tile.X, tile.Y);
+            if (!treeTiles.Contains(key)) return;
+
+            BiomeConfig biome = tile.Biome;
+            if (biome != null && biome.BurningVegetationSprite != null)
+            {
+                TilemapTile burningTile = GetOrCreateTile(biome.BurningVegetationSprite);
+                vegetationTilemap.SetTile(new Vector3Int(tile.X, tile.Y, 0), burningTile);
+            }
+            else
+            {
+                // No burning sprite — just remove the tree immediately
+                vegetationTilemap.SetTile(new Vector3Int(tile.X, tile.Y, 0), null);
+                treeTiles.Remove(key);
+            }
+        }
+
+        private void RemoveBurnedTree(GameState.Tile tile)
+        {
+            if (tile == null || vegetationTilemap == null) return;
+
+            var key = new Vector2Int(tile.X, tile.Y);
+            if (!treeTiles.Contains(key)) return;
+
+            vegetationTilemap.SetTile(new Vector3Int(tile.X, tile.Y, 0), null);
+            treeTiles.Remove(key);
+        }
+
         public void ToggleVegetation()
         {
-            if (treeContainer != null)
+            if (vegetationTilemap != null)
             {
-                treeContainer.SetActive(!treeContainer.activeSelf);
+                vegetationTilemap.gameObject.SetActive(!vegetationTilemap.gameObject.activeSelf);
             }
         }
 
         public void ClearTrees()
         {
-            treesByTile.Clear();
+            treeTiles.Clear();
+            tileCache.Clear();
 
-            if (treeContainer != null)
-            {
-                if (Application.isPlaying) Destroy(treeContainer);
-                else DestroyImmediate(treeContainer);
-                treeContainer = null;
-            }
-
-            while (true)
-            {
-                var leftover = transform.Find("Trees");
-                if (leftover == null) break;
-                leftover.name = "Trees_Destroying";
-                if (Application.isPlaying) Destroy(leftover.gameObject);
-                else DestroyImmediate(leftover.gameObject);
-            }
+            if (vegetationTilemap != null)
+                vegetationTilemap.ClearAllTiles();
         }
 
         public void RemoveTreesInArea(int startX, int startY, int width, int height)
         {
+            if (vegetationTilemap == null) return;
+
             for (int y = startY; y < startY + height; y++)
             {
                 for (int x = startX; x < startX + width; x++)
                 {
-                    var key = new Vector2Int(x, y);
-                    if (treesByTile.TryGetValue(key, out GameObject treeGO))
-                    {
-                        if (treeGO != null)
-                        {
-                            if (Application.isPlaying) Destroy(treeGO);
-                            else DestroyImmediate(treeGO);
-                        }
-                        treesByTile.Remove(key);
-                    }
+                    vegetationTilemap.SetTile(new Vector3Int(x, y, 0), null);
+                    treeTiles.Remove(new Vector2Int(x, y));
                 }
             }
         }
 
-        public void PlaceTrees(MapData mapData)
+        public void PlaceTrees(MapData data)
         {
             ClearTrees();
+            mapData = data;
 
-            treeContainer = new GameObject("Trees");
-            treeContainer.transform.SetParent(transform);
+            if (vegetationTilemap == null)
+            {
+                Debug.LogWarning("TreePlacer: vegetationTilemap not assigned.");
+                return;
+            }
 
-            int width = mapData.Width;
-            int height = mapData.Height;
-            System.Random rng = new System.Random(mapData.Seed);
+            int width = data.Width;
+            int height = data.Height;
+            System.Random rng = new System.Random(data.Seed);
             int treeCount = 0;
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    BiomeConfig biome = mapData.BiomeGrid[x, y];
+                    BiomeConfig biome = data.BiomeGrid[x, y];
                     if (biome == null || biome.VegetationSprites == null || biome.VegetationSprites.Length == 0)
                         continue;
 
                     float rangeMin = 0f;
                     float rangeMax = biome.MaxHeight;
-                    for (int i = 0; i < mapData.Biomes.Length; i++)
+                    for (int i = 0; i < data.Biomes.Length; i++)
                     {
-                        if (mapData.Biomes[i] == biome)
+                        if (data.Biomes[i] == biome)
                         {
-                            rangeMin = i > 0 ? mapData.Biomes[i - 1].MaxHeight : 0f;
+                            rangeMin = i > 0 ? data.Biomes[i - 1].MaxHeight : 0f;
                             break;
                         }
                     }
 
-                    float noiseValue = mapData.NoiseMap[x, y];
+                    float noiseValue = data.NoiseMap[x, y];
                     float normalized = (noiseValue - rangeMin) / (rangeMax - rangeMin);
 
                     float spawnChance;
@@ -127,27 +166,26 @@ namespace Presentation.MapGeneration
                         continue;
 
                     Sprite sprite = biome.VegetationSprites[rng.Next(biome.VegetationSprites.Length)];
+                    TilemapTile tile = GetOrCreateTile(sprite);
 
-                    Vector3Int tilePos = new Vector3Int(x, y, 0);
-                    Vector3 worldPos = groundTilemap.GetCellCenterWorld(tilePos);
-
-                    var treeGO = new GameObject($"Tree_{x}_{y}");
-                    treeGO.transform.SetParent(treeContainer.transform);
-                    treeGO.transform.position = new Vector3(worldPos.x, worldPos.y, 0f);
-                    treeGO.transform.localScale = Vector3.one * spriteScale;
-
-                    var sr = treeGO.AddComponent<SpriteRenderer>();
-                    sr.sprite = sprite;
-                    // Isometric sorting: same diagonal (x+y) = same depth
-                    // Higher (x+y) = further from camera = lower sorting order
-                    sr.sortingOrder = baseSortingOrder + (width + height) - (x + y);
-
-                    treesByTile[new Vector2Int(x, y)] = treeGO;
+                    vegetationTilemap.SetTile(new Vector3Int(x, y, 0), tile);
+                    treeTiles.Add(new Vector2Int(x, y));
                     treeCount++;
                 }
             }
 
-            Debug.Log($"TreePlacer: Placed {treeCount} trees.");
+            Debug.Log($"TreePlacer: Placed {treeCount} trees on tilemap (single draw call).");
+        }
+
+        private TilemapTile GetOrCreateTile(Sprite sprite)
+        {
+            if (!tileCache.TryGetValue(sprite, out TilemapTile tile))
+            {
+                tile = ScriptableObject.CreateInstance<TilemapTile>();
+                tile.sprite = sprite;
+                tileCache[sprite] = tile;
+            }
+            return tile;
         }
     }
 }

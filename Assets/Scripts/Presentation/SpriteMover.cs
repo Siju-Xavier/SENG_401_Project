@@ -8,11 +8,17 @@ namespace Presentation
         [Header("Movement Settings")]
         [SerializeField] private float speed = 5f;
         [SerializeField] private float stopDistance = 0.1f;
-        [SerializeField] private bool autoFlip = true;
+
+        [Header("Directional Sprites")]
+        [SerializeField] private Sprite spriteBottomLeft;
+        [SerializeField] private Sprite spriteBottomRight;
 
         private Vector3 _targetPosition;
         private SpriteRenderer _spriteRenderer;
         private bool _isMoving;
+        private bool _wasMoving;
+
+        public System.Action OnArrived;
 
         private void Awake()
         {
@@ -27,27 +33,36 @@ namespace Presentation
             if (distance > stopDistance)
             {
                 _isMoving = true;
+                _wasMoving = true;
                 MoveTowardsTarget();
             }
             else
             {
                 _isMoving = false;
+                if (_wasMoving)
+                {
+                    _wasMoving = false;
+                    OnArrived?.Invoke();
+                }
             }
         }
 
         private void MoveTowardsTarget()
         {
             Vector3 direction = (_targetPosition - transform.position).normalized;
-            
-            // Handle flipping
-            if (autoFlip && Mathf.Abs(direction.x) > 0.01f)
+
+            // Swap sprite based on horizontal movement direction
+            if (Mathf.Abs(direction.x) > 0.01f)
             {
-                // If moving right (direction.x > 0), set flipX = false (assuming original points right)
-                // If moving left (direction.x < 0), set flipX = true (points left)
-                // Wait, your firefighter sheet has him facing right.
-                // So move right -> flipX = false.
-                // Move left -> flipX = true.
-                _spriteRenderer.flipX = direction.x < 0;
+                if (spriteBottomLeft != null && spriteBottomRight != null)
+                {
+                    _spriteRenderer.sprite = direction.x < 0 ? spriteBottomLeft : spriteBottomRight;
+                }
+                else
+                {
+                    // Fallback to flipX if no directional sprites assigned
+                    _spriteRenderer.flipX = direction.x < 0;
+                }
             }
 
             transform.position = Vector3.MoveTowards(transform.position, _targetPosition, speed * Time.deltaTime);
@@ -56,8 +71,18 @@ namespace Presentation
         public void SetTarget(Vector3 newTarget)
         {
             _targetPosition = newTarget;
-            // Keep the same Z to avoid clipping issues
             _targetPosition.z = transform.position.z;
+        }
+
+        public void SetDirectionalSprites(Sprite bottomLeft, Sprite bottomRight)
+        {
+            spriteBottomLeft = bottomLeft;
+            spriteBottomRight = bottomRight;
+        }
+
+        public void SetSpeed(float newSpeed)
+        {
+            speed = newSpeed;
         }
 
         public bool IsMoving => _isMoving;

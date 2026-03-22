@@ -69,6 +69,13 @@ namespace BusinessLogic {
 
         // ── Public API (called by GameManager) ───────────────────────────
 
+        public void SetDifficulty(float spreadChance, float interval, int fireCount, float growthRate) {
+            baseSpreadChance = spreadChance;
+            tickInterval = interval;
+            initialFireCount = fireCount;
+            intensityGrowthRate = growthRate;
+        }
+
         /// <summary>Start / resume the fire simulation loop.</summary>
         public void Resume() {
             isRunning = true;

@@ -27,6 +27,7 @@ namespace BusinessLogic {
             if (progressionData.CurrentScore >= threshold) {
                 progressionData.CurrentLevel++;
                 Debug.Log($"[Progression] Level up! Now level {progressionData.CurrentLevel}");
+                EventBroker.Instance.Publish(Core.EventType.LevelUp, progressionData.CurrentLevel);
 
                 // Unlock a feature at every level
                 string unlock = $"Level{progressionData.CurrentLevel}Reward";
@@ -38,6 +39,8 @@ namespace BusinessLogic {
                 StartCoroutine(SyncProgressionToCloud());
             }
         }
+
+        public int CurrentLevel => progressionData != null ? progressionData.CurrentLevel : 1;
 
         public int GetCurrentScore() {
             return progressionData != null ? progressionData.CurrentScore : 0;

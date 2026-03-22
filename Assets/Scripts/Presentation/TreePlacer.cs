@@ -27,6 +27,9 @@ namespace Presentation.MapGeneration
         private Dictionary<Sprite, TilemapTile> tileCache = new Dictionary<Sprite, TilemapTile>();
         private MapData mapData;
 
+        public int OriginalTreeCount { get; private set; }
+        public int CurrentTreeCount => treeTiles.Count;
+
         private void OnEnable()
         {
             Core.EventBroker.Instance.Subscribe(Core.EventType.FireStarted, OnFireStarted);
@@ -174,6 +177,7 @@ namespace Presentation.MapGeneration
                 }
             }
 
+            OriginalTreeCount = treeCount;
             Debug.Log($"TreePlacer: Placed {treeCount} trees on tilemap (single draw call).");
         }
 

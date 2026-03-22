@@ -17,20 +17,36 @@ namespace Core {
         [SerializeField] private SaveManager saveManager;
         [SerializeField] private ScoringSystem scoringSystem;
         [SerializeField] private AutoSaveController autoSaveController;
+        [SerializeField] private ProgressionManager progressionManager;
 
-        /// <summary>Player ID used for cloud save operations.</summary>
         [Header("Player")]
         [SerializeField] private int playerId = 1;
 
+        [Header("Round Settings")]
+        [SerializeField] private float roundDuration = 60f;
+
         private GridSystem gridSystem;
+        private InputHandler inputHandler;
         private int currentTick;
         private int currentRound;
+        private float roundTimer;
+        private bool roundActive;
 
         public int PlayerId => playerId;
         public int CurrentTick  { get => currentTick;  set => currentTick = value; }
         public int CurrentRound { get => currentRound; set => currentRound = value; }
 
         private void Start() {
+            // Auto-find references not wired in Inspector
+            if (mapOrchestrator == null) mapOrchestrator = FindFirstObjectByType<MapGenerationOrchestrator>();
+            if (fireEngine == null) fireEngine = FindFirstObjectByType<FireEngine>();
+            if (weatherSystem == null) weatherSystem = FindFirstObjectByType<WeatherSystem>();
+            if (resourceManager == null) resourceManager = FindFirstObjectByType<ResourceManager>();
+            if (scoringSystem == null) scoringSystem = FindFirstObjectByType<ScoringSystem>();
+            if (progressionManager == null) progressionManager = FindFirstObjectByType<ProgressionManager>();
+            if (saveManager == null) saveManager = FindFirstObjectByType<SaveManager>();
+            if (autoSaveController == null) autoSaveController = FindFirstObjectByType<AutoSaveController>();
+
             EventBroker.Instance.Subscribe(Core.EventType.GameEnded, EndGame);
 
             // Check if we were asked to restore a save (from MainMenuManager.ContinueGame)
@@ -65,16 +81,73 @@ namespace Core {
         }
 
         private void FinishStartGame() {
-            // Start the fire simulation (UML: GameManager --> FireEngine : controls_lifecycle)
+            // Initialize resource manager with city data
+            if (resourceManager != null && gridSystem != null)
+                resourceManager.Initialize(gridSystem.Regions);
+
+            // Wire input handler
+            inputHandler = FindFirstObjectByType<InputHandler>();
+            if (inputHandler != null && gridSystem != null)
+                inputHandler.SetGridSystem(gridSystem);
+
+            // Start the fire simulation
             if (fireEngine != null) {
                 if (gridSystem != null) fireEngine.SetGridSystem(gridSystem);
                 fireEngine.Resume();
-                fireEngine.StartRandomFires();
             }
 
             // Start the auto-save loop
             if (autoSaveController != null)
                 autoSaveController.Run();
+
+            StartRound();
+        }
+
+        private void Update() {
+            if (!roundActive) return;
+
+            roundTimer -= Time.deltaTime;
+            if (roundTimer <= 0f || (fireEngine != null && fireEngine.BurningTileCount == 0 && roundTimer < roundDuration - 5f)) {
+                EndRound();
+            }
+        }
+
+        private void StartRound() {
+            Debug.Log($"[GameManager] Round {currentRound} started.");
+            roundTimer = roundDuration;
+            roundActive = true;
+
+            if (fireEngine != null)
+                fireEngine.StartRandomFires();
+        }
+
+        private void EndRound() {
+            roundActive = false;
+            Debug.Log($"[GameManager] Round {currentRound} ended.");
+
+            // Score based on remaining fires (fewer = better)
+            int burningCount = fireEngine != null ? fireEngine.BurningTileCount : 0;
+            int baseScore = 50 + (currentRound * 10);
+            int firesPenalty = burningCount * 5;
+            int roundScore = Mathf.Max(0, baseScore - firesPenalty);
+
+            if (scoringSystem != null)
+                scoringSystem.CalculateScore(burningCount);
+
+            if (progressionManager != null) {
+                progressionManager.AddToScore(roundScore);
+                progressionManager.CheckScore();
+            }
+
+            // Replenish budgets
+            if (resourceManager != null)
+                resourceManager.AddRoundBudget();
+
+            EventBroker.Instance.Publish(Core.EventType.RoundComplete, currentRound);
+            Debug.Log($"[GameManager] Score: +{roundScore} (fires remaining: {burningCount})");
+
+            currentRound++;
+            StartRound();
         }
 
         public void PauseGame() {

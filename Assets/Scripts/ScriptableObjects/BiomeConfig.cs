@@ -19,6 +19,13 @@ namespace ScriptableObjects {
         [Tooltip("Sprite shown when vegetation is burning (optional — tree is removed if null)")]
         [SerializeField] private Sprite burningVegetationSprite;
 
+        [Header("Decoration")]
+        [Tooltip("Sprites for non-vegetation decoration (e.g., mountain rocks). Placed on a separate tilemap layer.")]
+        [SerializeField] private Sprite[] decorationSprites;
+        [Tooltip("How densely decorations spawn (0 = none, 1 = every tile)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float decorationDensity = 0f;
+
         [Header("Structures")]
         [Tooltip("Whether cities/structures can be placed on this biome")]
         [SerializeField] private bool allowStructures = true;
@@ -35,6 +42,8 @@ namespace ScriptableObjects {
         public TileBase BurningTile => burningTile;
         public Sprite[] VegetationSprites => vegetationSprites;
         public Sprite BurningVegetationSprite => burningVegetationSprite;
+        public Sprite[] DecorationSprites => decorationSprites;
+        public float DecorationDensity => decorationDensity;
         public bool AllowStructures => allowStructures;
         public float MaxHeight => maxHeight;
     }

@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: 2cfd4f626cc749c45bec70dbcba2b86e
+guid: 6a0a046b4b66c38418d85babc140452a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 2215985850833742542
-    second: burning_end_3_0
-  - first:
-      213: -9004933053705359408
-    second: burning_end_3_1
+      213: 872221636721403907
+    second: moutain_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -54,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 32
+  spritePixelsToUnits: 64
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -116,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: burning_end_3_0
+      name: moutain_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 0
-        width: 8
-        height: 20
+        x: 2
+        y: 3
+        width: 60
+        height: 57
       alignment: 7
       pivot: {x: 0.5, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -131,30 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ecaac3af363c0ce10800000000000000
-      internalID: 2215985850833742542
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: burning_end_3_1
-      rect:
-        serializedVersion: 2
-        x: 20
-        y: 0
-        width: 37
-        height: 24
-      alignment: 7
-      pivot: {x: 0.5, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 0dfe7bb091d080380800000000000000
-      internalID: -9004933053705359408
+      spriteID: 308603615f0ca1c00800000000000000
+      internalID: 872221636721403907
       vertices: []
       indices: 
       edges: []
@@ -163,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 9d571e33b5d8faa4a877866bbf5d975d
+    spriteID: 27febac533a79eb4fa308dc7a28d84c3
     internalID: 0
     vertices: []
     indices: 
@@ -173,8 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      burning_end_3_0: 2215985850833742542
-      burning_end_3_1: -9004933053705359408
+      moutain_0: 872221636721403907
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

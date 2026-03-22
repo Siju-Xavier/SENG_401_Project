@@ -12,11 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73e5aca3f99e50b4ba5c21f8f306f834, type: 3}
   m_Name: MountainBiome
   m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.BiomeConfig
-  spreadMultiplier: 0.5
+  spreadMultiplier: 0
   baseMoisture: 0.1
   defaultSprite: {fileID: 0}
   burningSprite: {fileID: 0}
   defaultTile: {fileID: 11400000, guid: ea72b503ec34843c29674ec7f6f5062a, type: 2}
   burningTile: {fileID: 0}
   vegetationSprites: []
+  burningVegetationSprite: {fileID: 0}
+  decorationSprites:
+  - {fileID: 872221636721403907, guid: 6a0a046b4b66c38418d85babc140452a, type: 3}
+  decorationDensity: 1
+  allowStructures: 1
   maxHeight: 1

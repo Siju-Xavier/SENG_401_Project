@@ -32520,6 +32520,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.MapGeneration.DecorationPlacer
   decorationTilemap: {fileID: 1720835182}
+  minThreshold: 0.1
+  maxThreshold: 0.9
 --- !u!1 &940052172
 GameObject:
   m_ObjectHideFlags: 0

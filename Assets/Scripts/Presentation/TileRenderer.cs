@@ -99,7 +99,7 @@ namespace Presentation {
 
             // Use the tilemap's GetCellCenterWorld for correct positioning on isometric maps
             if (groundTilemap != null) {
-                fireGO.transform.position = groundTilemap.GetCellCenterWorld(new Vector3Int(tile.X, tile.Y, 0));
+                fireGO.transform.position = groundTilemap.GetCellCenterWorld(new Vector3Int(tile.X, tile.Y, 0)) + new Vector3(0f, 0.25f, 0f);
             } else {
                 fireGO.transform.position = new Vector3(tile.X, tile.Y, 0) + fireOffset;
             }

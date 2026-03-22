@@ -10,6 +10,7 @@ namespace Presentation.MapGeneration
         [Header("References")]
         [SerializeField] private Tilemap groundTilemap;
         [SerializeField] private TreePlacer treePlacer;
+        [SerializeField] private DecorationPlacer decorationPlacer;
 
         [Header("City Configs")]
         [Tooltip("Assign CityConfig assets here — one per city variation")]
@@ -85,11 +86,12 @@ namespace Presentation.MapGeneration
                 int startX = city.TileX - halfW;
                 int startY = city.TileY - halfH;
 
-                // Clear vegetation under the city footprint
+                // Clear vegetation and decorations under the city footprint
                 if (treePlacer != null)
-                {
                     treePlacer.RemoveTreesInArea(startX, startY, config.FootprintWidth, config.FootprintHeight);
-                }
+
+                if (decorationPlacer != null)
+                    decorationPlacer.RemoveDecorationsInArea(startX, startY, config.FootprintWidth, config.FootprintHeight);
 
                 // Mark tiles as occupied by this region
                 for (int ty = startY; ty < startY + config.FootprintHeight; ty++)

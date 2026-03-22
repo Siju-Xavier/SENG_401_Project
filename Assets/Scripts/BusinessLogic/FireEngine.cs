@@ -116,6 +116,8 @@ namespace BusinessLogic {
             // Work on a snapshot so new ignitions don't affect this tick
             var snapshot = new List<Tile>(burningTiles);
 
+            var burnedOut = new List<Tile>();
+
             foreach (var tile in snapshot) {
                 if (!tile.IsOnFire) continue;
 
@@ -127,6 +129,19 @@ namespace BusinessLogic {
 
                 // ── Attempt spread ──
                 CalculateSpread(tile);
+
+                // ── Burn out: tile reaches max intensity and is destroyed ──
+                if (tile.FireIntensity >= maxIntensity) {
+                    burnedOut.Add(tile);
+                }
+            }
+
+            // Burn out tiles that reached max intensity
+            foreach (var tile in burnedOut) {
+                tile.IsOnFire = false;
+                tile.FireIntensity = 0f;
+                burningTiles.Remove(tile);
+                EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
             }
 
             // Remove tiles that somehow got extinguished mid-tick

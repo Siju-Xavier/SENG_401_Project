@@ -14,6 +14,7 @@ namespace Core
         [Header("Rendering")]
         [SerializeField] private BiomeTilemapRenderer biomeTilemapRenderer;
         [SerializeField] private TreePlacer treePlacer;
+        [SerializeField] private DecorationPlacer decorationPlacer;
         [SerializeField] private CityPlacer cityPlacer;
 
         [Header("Game State")]
@@ -52,6 +53,10 @@ namespace Core
             // 3. Place vegetation
             if (treePlacer != null)
                 treePlacer.PlaceTrees(mapData);
+
+            // 3b. Place decorations (mountain rocks, etc.)
+            if (decorationPlacer != null)
+                decorationPlacer.PlaceDecorations(mapData);
 
             // 4. Initialize grid system and assign biomes to tiles
             if (gridSystem == null)

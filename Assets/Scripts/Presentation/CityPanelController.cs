@@ -23,8 +23,13 @@ namespace Presentation
 
         private void Awake()
         {
-            if (Instance != null && Instance != this) Destroy(gameObject);
-            else Instance = this;
+            Debug.Log($"[CityPanelController] Awake running on {gameObject.name}");
+            if (Instance != null && Instance != this) {
+                Debug.Log($"[CityPanelController] Duplicate found on {gameObject.name}, destroying. Instance is on {Instance.gameObject.name}");
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
 
             if (panelRoot != null) panelRoot.SetActive(false);
 
@@ -40,13 +45,22 @@ namespace Presentation
 
         public void ShowPanel(City city)
         {
+            Debug.Log($"[CityPanelController] ShowPanel triggered for city: {(city != null ? city.CityName : "null")}");
             if (city == null) return;
             currentCity = city;
 
             if (cityNameText != null) cityNameText.text = city.CityName;
-            if (statsText != null) statsText.text = $"Budget: ${city.Budget}\nReputation: {city.Reputation}";
+            else Debug.LogWarning("[CityPanelController] cityNameText is null!");
 
-            if (panelRoot != null) panelRoot.SetActive(true);
+            if (statsText != null) statsText.text = $"Budget: ${city.Budget}\nReputation: {city.Reputation}";
+            else Debug.LogWarning("[CityPanelController] statsText is null!");
+
+            if (panelRoot != null) {
+                panelRoot.SetActive(true);
+                Debug.Log($"[CityPanelController] panelRoot set to active. Current parent: {panelRoot.transform.parent.name}");
+            } else {
+                Debug.LogWarning("[CityPanelController] panelRoot is null! Cannot activate the panel.");
+            }
         }
 
         public void HidePanel()

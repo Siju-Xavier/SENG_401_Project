@@ -32,7 +32,7 @@ namespace Presentation
             spriteRenderer = GetComponent<SpriteRenderer>();
 
             // Set directional sprites and speed from config
-            mover.SetDirectionalSprites(config.SpriteBottomLeft, config.SpriteBottomRight);
+            mover.SetDirectionalSprites(config.SpriteBottomLeft, config.SpriteBottomRight, config.WalkSprites);
             mover.SetSpeed(config.MoveSpeed);
 
             // Set initial sprite

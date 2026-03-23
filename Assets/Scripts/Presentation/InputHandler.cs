@@ -38,6 +38,12 @@ namespace Presentation
 
         private void HandleClick()
         {
+            if (UnityEngine.EventSystems.EventSystem.current != null && 
+                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) 
+            {
+                return; // Ignore clicks on the map if we're clicking on the UI
+            }
+
             if (mainCamera == null || groundTilemap == null || gridSystem == null) return;
 
             Vector3 worldPos = mainCamera.ScreenToWorldPoint(Input.mousePosition);

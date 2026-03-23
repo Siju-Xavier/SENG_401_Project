@@ -12,6 +12,9 @@ namespace ScriptableObjects {
         [Header("Directional Sprites")]
         [SerializeField] private Sprite spriteBottomLeft;
         [SerializeField] private Sprite spriteBottomRight;
+        
+        [Header("Animation Sprites")]
+        [SerializeField] private Sprite[] walkSprites;
 
         public int DeploymentCost => deploymentCost;
         public int MaxWaterCapacity => maxWaterCapacity;
@@ -20,5 +23,6 @@ namespace ScriptableObjects {
         public GameObject UnitPrefab => unitPrefab;
         public Sprite SpriteBottomLeft => spriteBottomLeft;
         public Sprite SpriteBottomRight => spriteBottomRight;
+        public Sprite[] WalkSprites => walkSprites;
     }
 }

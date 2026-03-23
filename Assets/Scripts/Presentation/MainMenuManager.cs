@@ -39,9 +39,9 @@ namespace Presentation
         /// </summary>
         public void StartNewGame()
         {
-            Debug.Log("[MainMenu] Starting new game...");
+            Debug.Log("[MainMenu] Starting new game - loading Game 1...");
             ShouldLoadSave = false;
-            SceneManager.LoadScene("Game");
+            SceneLoader.LoadScene("Game 1");
         }
 
         /// <summary>
@@ -52,10 +52,10 @@ namespace Presentation
         {
             if (Persistence.SaveManager.HasLocalSave())
             {
-                Debug.Log("[MainMenu] Save found — loading game...");
+                Debug.Log("[MainMenu] Save found — loading Game 1...");
                 ShouldLoadSave = true;
                 // SaveManager will restore state once the Game scene starts.
-                SceneManager.LoadScene("Game");
+                SceneLoader.LoadScene("Game 1");
             }
             else
             {

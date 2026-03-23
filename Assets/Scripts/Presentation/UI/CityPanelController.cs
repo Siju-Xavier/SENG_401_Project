@@ -79,8 +79,14 @@ namespace Presentation
         {
             if (currentCity == null) return;
             Debug.Log($"[CityPanel] Sending firefighter from {currentCity.CityName}");
-            // Future logic: Deploy firefighter from city budget/pool
-            // resourceManager?.DeployFirefighter(...);
+            if (resourceManager == null) {
+                resourceManager = FindFirstObjectByType<ResourceManager>();
+            }
+            if (resourceManager != null) {
+                resourceManager.DeployFirefighterFromCity(currentCity);
+            } else {
+                Debug.LogWarning("[CityPanel] ResourceManager not found in scene!");
+            }
         }
 
         private void OnPolicyClicked()

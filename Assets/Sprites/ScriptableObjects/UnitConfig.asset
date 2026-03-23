@@ -16,4 +16,23 @@ MonoBehaviour:
   maxWaterCapacity: 50
   moveSpeed: 5
   extinguishRate: 0.5
-  unitPrefab: {fileID: 0}
+  unitPrefab: {fileID: 2536402554241467947, guid: 775f4ac97ec55ca4eb14676588edf446, type: 3}
+  spriteBottomLeft: {fileID: 0}
+  spriteBottomRight: {fileID: 0}
+  walkSprites:
+  - {fileID: 5077917185552770260, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: -4195839554692395046, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 2399195435281955564, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: -842609007721476305, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: -3895655381535446103, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 8275661432118388582, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 1426735798881985202, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 2229549757149577549, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 5585577335429334352, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 634973651487567805, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: -9217533985934773387, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 2334255774963302733, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 5059282944790755524, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: -4974142296929780132, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: 1624321853575014909, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  - {fileID: -2006209938788831476, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}

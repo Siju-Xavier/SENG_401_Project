@@ -20,8 +20,12 @@ namespace Presentation
         [SerializeField] private GameObject pausePanel;
         [SerializeField] private Button pauseBtn;
         [SerializeField] private Button resumeBtn;
-        [SerializeField] private Button saveBtn;
+        [SerializeField] private Button settingsBtn;
         [SerializeField] private Button quitBtn;
+
+        [Header("Settings Panel")]
+        [SerializeField] private GameObject settingsPanel;
+        [SerializeField] private Button closeSettingsBtn;
 
         private bool isPaused;
 
@@ -43,17 +47,18 @@ namespace Presentation
             {
                 if (resumeBtn == null) resumeBtn = pausePanel.transform.Find("PausePanelContainer/ResumeButton")?.GetComponent<Button>()
                                                 ?? pausePanel.transform.Find("ResumeButton")?.GetComponent<Button>();
-                if (saveBtn   == null) saveBtn   = pausePanel.transform.Find("PausePanelContainer/SaveButton")?.GetComponent<Button>()
-                                                ?? pausePanel.transform.Find("SaveButton")?.GetComponent<Button>();
-                if (quitBtn   == null) quitBtn   = pausePanel.transform.Find("PausePanelContainer/QuitButton")?.GetComponent<Button>()
+                if (settingsBtn == null) settingsBtn = pausePanel.transform.Find("PausePanelContainer/SettingsButton")?.GetComponent<Button>()
+                                                ?? pausePanel.transform.Find("SettingsButton")?.GetComponent<Button>();
+                if (quitBtn == null) quitBtn = pausePanel.transform.Find("PausePanelContainer/QuitButton")?.GetComponent<Button>()
                                                 ?? pausePanel.transform.Find("QuitButton")?.GetComponent<Button>();
             }
 
             // Wire button clicks
             if (pauseBtn  != null) pauseBtn.onClick.AddListener(PauseGame);
             if (resumeBtn != null) resumeBtn.onClick.AddListener(ResumeGame);
-            if (saveBtn   != null) saveBtn.onClick.AddListener(SaveGame);
+            if (settingsBtn != null) settingsBtn.onClick.AddListener(OpenSettings);
             if (quitBtn   != null) quitBtn.onClick.AddListener(QuitGame);
+            if (closeSettingsBtn != null) closeSettingsBtn.onClick.AddListener(CloseSettings);
 
             SetPaused(false);
         }
@@ -103,26 +108,31 @@ namespace Presentation
             else throw new System.Exception("GameManager not found in scene!");
         }
 
-        public void SaveGame()
+        public void OpenSettings()
         {
-            var saveManager = FindObjectOfType<Persistence.SaveManager>();
-            if (saveManager != null)
+            Debug.Log("[PauseMenu] Opening Settings...");
+            if (settingsPanel != null)
             {
-                saveManager.SaveFile();
-                Debug.Log("[PauseMenu] Game Saved!");
-                // Show a brief UI alert if UIManager is available
-                FindObjectOfType<UIManager>()?.ShowAlert("Game Saved!");
+                settingsPanel.SetActive(!settingsPanel.activeSelf);
             }
             else
             {
-                Debug.LogWarning("[PauseMenu] SaveManager not found in scene!");
+                Debug.LogWarning("[PauseMenu] No settings panel assigned!");
+            }
+        }
+
+        public void CloseSettings()
+        {
+            if (settingsPanel != null)
+            {
+                settingsPanel.SetActive(false);
             }
         }
 
         public void QuitGame()
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene("MainMenu");
+            SceneLoader.LoadScene("MainMenu");
         }
 
         // ── Private Helpers ──────────────────────────────────────────────────

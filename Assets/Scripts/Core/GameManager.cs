@@ -18,12 +18,13 @@ namespace Core {
         [SerializeField] private ScoringSystem scoringSystem;
         [SerializeField] private AutoSaveController autoSaveController;
         [SerializeField] private ProgressionManager progressionManager;
+        [SerializeField] private UIManager uiManager;
 
         [Header("Player")]
         [SerializeField] private int playerId = 1;
 
         [Header("Round Settings")]
-        [SerializeField] private float roundDuration = 60f;
+        [SerializeField] private float roundDuration = 45f;
 
         private GridSystem gridSystem;
         private InputHandler inputHandler;
@@ -31,6 +32,7 @@ namespace Core {
         private int currentRound;
         private float roundTimer;
         private bool roundActive;
+        private bool anyCityBurnedRound;
 
         public int PlayerId => playerId;
         public int CurrentTick  { get => currentTick;  set => currentTick = value; }
@@ -46,8 +48,10 @@ namespace Core {
             if (progressionManager == null) progressionManager = FindFirstObjectByType<ProgressionManager>();
             if (saveManager == null) saveManager = FindFirstObjectByType<SaveManager>();
             if (autoSaveController == null) autoSaveController = FindFirstObjectByType<AutoSaveController>();
+            if (uiManager == null) uiManager = FindFirstObjectByType<UIManager>();
 
             EventBroker.Instance.Subscribe(Core.EventType.GameEnded, EndGame);
+            EventBroker.Instance.Subscribe(Core.EventType.FireStarted, OnFireStarted);
 
             // Check if we were asked to restore a save (from MainMenuManager.ContinueGame)
             if (Presentation.MainMenuManager.ShouldLoadSave && saveManager != null) {
@@ -56,6 +60,17 @@ namespace Core {
                 LoadGame(save);
             } else {
                 StartGame();
+            }
+        }
+
+        private void OnDestroy() {
+            EventBroker.Instance.Unsubscribe(Core.EventType.GameEnded, EndGame);
+            EventBroker.Instance.Unsubscribe(Core.EventType.FireStarted, OnFireStarted);
+        }
+
+        private void OnFireStarted(object data) {
+            if (data is Tile tile && tile.IsCityFootprint) {
+                anyCityBurnedRound = true;
             }
         }
 
@@ -107,6 +122,8 @@ namespace Core {
             if (!roundActive) return;
 
             roundTimer -= Time.deltaTime;
+            if (uiManager != null) uiManager.UpdateTimerDisplay(roundTimer);
+
             if (roundTimer <= 0f || (fireEngine != null && fireEngine.BurningTileCount == 0 && roundTimer < roundDuration - 5f)) {
                 EndRound();
             }
@@ -116,6 +133,7 @@ namespace Core {
             Debug.Log($"[GameManager] Round {currentRound} started.");
             roundTimer = roundDuration;
             roundActive = true;
+            anyCityBurnedRound = false;
 
             if (fireEngine != null)
                 fireEngine.StartRandomFires();
@@ -139,9 +157,23 @@ namespace Core {
                 progressionManager.CheckScore();
             }
 
-            // Replenish budgets
             if (resourceManager != null)
                 resourceManager.AddRoundBudget();
+
+            // Progress level if no city buildings burned
+            if (!anyCityBurnedRound) {
+                Debug.Log("[GameManager] No city burned! Progressing to next level.");
+                if (progressionManager != null) {
+                    progressionManager.ForceLevelUp();
+                }
+
+                if (fireEngine != null) {
+                    fireEngine.ExtinguishAllFires();
+                    fireEngine.RecoverBurntTiles(0.25f); // 25% recover rate
+                }
+            } else {
+                Debug.Log("[GameManager] A city was damaged this round. No level progression.");
+            }
 
             EventBroker.Instance.Publish(Core.EventType.RoundComplete, currentRound);
             Debug.Log($"[GameManager] Score: +{roundScore} (fires remaining: {burningCount})");

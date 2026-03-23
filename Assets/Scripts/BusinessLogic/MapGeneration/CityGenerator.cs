@@ -48,7 +48,8 @@ namespace BusinessLogic
                     }
                     if (tooClose) continue;
 
-                    string cityName = $"City_{i + 1}";
+                    string[] names = { "Banff", "Calgary", "Edmonton" };
+                    string cityName = i < names.Length ? names[i] : $"City_{i + 1}";
                     City city = new City(cityName, x, y);
                     Region region = new Region(cityName, city);
                     grid.AddRegion(region);

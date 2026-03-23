@@ -139,6 +139,7 @@ namespace BusinessLogic {
                 // ── Burn out: tile reaches max intensity and is destroyed ──
                 if (tile.FireIntensity >= maxIntensity) {
                     burnedOut.Add(tile);
+                    tile.IsBurnt = true; // Mark tile as permanently burnt out
                 }
             }
 
@@ -165,6 +166,11 @@ namespace BusinessLogic {
         /// <summary>Attempt to spawn random fires based on level and policy modifiers.</summary>
         private void AutoIgniteTick() {
             if (gridSystem == null) return;
+            
+            int currentLevel = progressionManager != null ? progressionManager.CurrentLevel : 1;
+
+            // Only start auto-igniting on level 2 and above, or make it extremely rare on level 1
+            if (currentLevel == 1) return;
 
             // Base spawn chance per tick
             float baseSpawnChance = 0.05f; 
@@ -177,7 +183,7 @@ namespace BusinessLogic {
             int ry = Random.Range(0, gridSystem.Height);
             Tile tile = gridSystem.GetTileAt(rx, ry);
 
-            if (tile == null || tile.IsOnFire || tile.Biome == null || tile.Biome.SpreadMultiplier <= 0f) return;
+            if (tile == null || tile.IsOnFire || tile.IsBurnt || tile.Biome == null || tile.Biome.SpreadMultiplier <= 0f) return;
 
             // Local policy modifier
             float policyModifier = PolicyManager.Instance != null ? PolicyManager.Instance.GetSpawnModifierForRegion(tile.Region) : 1.0f;
@@ -205,8 +211,8 @@ namespace BusinessLogic {
                 : Vector2.zero;
 
             foreach (var neighbour in neighbours) {
-                // Skip tiles already on fire
-                if (neighbour.IsOnFire) continue;
+                // Skip tiles already on fire or burnt out
+                if (neighbour.IsOnFire || neighbour.IsBurnt) continue;
 
                 // Skip tiles with no biome (outside playable map) or water (SpreadMultiplier <= 0)
                 if (neighbour.Biome == null) continue;
@@ -322,12 +328,15 @@ namespace BusinessLogic {
                 Debug.Log($"[FireEngine] Sample tile (0,0): Biome={sampleTile.Biome}, Moisture={sampleTile.MoistureLevel}");
             }
 
-            int firesToStart = count > 0 ? count : initialFireCount;
+            int currentLevel = progressionManager != null ? progressionManager.CurrentLevel : 1;
+            int firesToStart = count > 0 ? count : (currentLevel == 1 ? 1 : initialFireCount);
+            
             int attempts = 0;
             int started  = 0;
             int nullTiles = 0;
             int alreadyOnFire = 0;
             int waterTiles = 0;
+            int burntTiles = 0;
 
             while (started < firesToStart && attempts < firesToStart * 20) {
                 attempts++;
@@ -337,6 +346,7 @@ namespace BusinessLogic {
 
                 if (tile == null) { nullTiles++; continue; }
                 if (tile.IsOnFire) { alreadyOnFire++; continue; }
+                if (tile.IsBurnt) { burntTiles++; continue; }
 
                 // Skip water biome (very high moisture / no spread)
                 if (tile.Biome != null && tile.Biome.SpreadMultiplier <= 0f) { waterTiles++; continue; }
@@ -345,7 +355,40 @@ namespace BusinessLogic {
                 started++;
             }
 
-            Debug.Log($"[FireEngine] Started {started} random fires. (attempts={attempts}, nullTiles={nullTiles}, water={waterTiles}, alreadyOnFire={alreadyOnFire})");
+            Debug.Log($"[FireEngine] Started {started} random fires. (attempts={attempts}, nullTiles={nullTiles}, water={waterTiles}, alreadyOnFire={alreadyOnFire}, burnt={burntTiles})");
+        }
+
+        // ── Round Cleanup / Burnt Tiles ────────────────────────────────────
+        
+        /// <summary>Extinguishes all active fires gracefully.</summary>
+        public void ExtinguishAllFires() {
+            var allBurning = new List<Tile>(burningTiles);
+            foreach (var tile in allBurning) {
+                // Ensure actively burning tiles are marked permanently as burnt so they turn grey!
+                tile.IsBurnt = true; 
+                ExtinguishTile(tile);
+            }
+        }
+
+        /// <summary>Randomly recovers a percentage (0.0 - 1.0) of burnt tiles, allowing them to burn again.</summary>
+        public void RecoverBurntTiles(float recoveryFraction) {
+            if (gridSystem == null) return;
+            int recoveredCount = 0;
+            
+            for (int x = 0; x < gridSystem.Width; x++) {
+                for (int y = 0; y < gridSystem.Height; y++) {
+                    Tile tile = gridSystem.GetTileAt(x, y);
+                    if (tile != null && tile.IsBurnt) {
+                        if (Random.value < recoveryFraction) {
+                            tile.IsBurnt = false;
+                            tile.MoistureLevel = tile.Biome != null ? tile.Biome.BaseMoisture : 1f;
+                            EventBroker.Instance.Publish(Core.EventType.TileRecovered, tile);
+                            recoveredCount++;
+                        }
+                    }
+                }
+            }
+            Debug.Log($"[FireEngine] Recovered {recoveredCount} burnt tiles.");
         }
 
         // ── Queries ──────────────────────────────────────────────────────

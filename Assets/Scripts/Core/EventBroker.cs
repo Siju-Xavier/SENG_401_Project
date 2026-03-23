@@ -2,7 +2,7 @@ namespace Core {
     using System;
     using System.Collections.Generic;
 
-    public enum EventType { FireStarted, FireSpread, FireExtinguished, TileUpdated, BudgetChanged, GameEnded, LevelUp, RoundComplete, UnitDeployed, EnvironmentImpact, FireNoLongerEdge }
+    public enum EventType { FireStarted, FireSpread, FireExtinguished, TileUpdated, BudgetChanged, GameEnded, LevelUp, RoundComplete, UnitDeployed, EnvironmentImpact, FireNoLongerEdge, TileRecovered }
 
     public class EventBroker {
         private static EventBroker _instance;

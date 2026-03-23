@@ -27,19 +27,31 @@ namespace Presentation.MapGeneration
             EventBroker.Instance.Subscribe(Core.EventType.FireStarted,      OnFireStarted);
             EventBroker.Instance.Subscribe(Core.EventType.FireSpread,       OnFireSpread);
             EventBroker.Instance.Subscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+            EventBroker.Instance.Subscribe(Core.EventType.TileRecovered,    OnTileRecovered);
         }
 
         private void OnDisable() {
             EventBroker.Instance.Unsubscribe(Core.EventType.FireStarted,      OnFireStarted);
             EventBroker.Instance.Unsubscribe(Core.EventType.FireSpread,       OnFireSpread);
             EventBroker.Instance.Unsubscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+            EventBroker.Instance.Unsubscribe(Core.EventType.TileRecovered,    OnTileRecovered);
         }
 
         // ── Event Handlers ───────────────────────────────────────────────
 
         private void OnFireStarted(object data)  => SwapToBurning(data as GameState.Tile);
         private void OnFireSpread(object data)   => SwapToBurning(data as GameState.Tile);
-        private void OnFireExtinguished(object data) => SwapToDefault(data as GameState.Tile);
+        private void OnFireExtinguished(object data) {
+            var tile = data as GameState.Tile;
+            if (tile == null) return;
+            if (tile.IsBurnt) {
+                SetTileBurnt(tile.X, tile.Y);
+            } else {
+                SetTileDefault(tile.X, tile.Y);
+            }
+        }
+
+        private void OnTileRecovered(object data) => SwapToDefault(data as GameState.Tile);
 
         private void SwapToBurning(GameState.Tile tile) {
             if (tile == null) return;
@@ -85,7 +97,10 @@ namespace Presentation.MapGeneration
             BiomeConfig biome = GetBiomeAt(x, y);
             if (biome != null && biome.BurningTile != null)
             {
-                groundTilemap.SetTile(new Vector3Int(x, y, 0), biome.BurningTile);
+                var pos = new Vector3Int(x, y, 0);
+                groundTilemap.SetTile(pos, biome.BurningTile);
+                groundTilemap.SetTileFlags(pos, TileFlags.None);
+                groundTilemap.SetColor(pos, Color.white);
             }
         }
 
@@ -94,7 +109,23 @@ namespace Presentation.MapGeneration
             BiomeConfig biome = GetBiomeAt(x, y);
             if (biome != null && biome.DefaultTile != null)
             {
-                groundTilemap.SetTile(new Vector3Int(x, y, 0), biome.DefaultTile);
+                var pos = new Vector3Int(x, y, 0);
+                groundTilemap.SetTile(pos, biome.DefaultTile);
+                groundTilemap.SetTileFlags(pos, TileFlags.None);
+                groundTilemap.SetColor(pos, Color.white);
+            }
+        }
+
+        public void SetTileBurnt(int x, int y)
+        {
+            BiomeConfig biome = GetBiomeAt(x, y);
+            if (biome != null && biome.DefaultTile != null)
+            {
+                var pos = new Vector3Int(x, y, 0);
+                groundTilemap.SetTile(pos, biome.DefaultTile);
+                groundTilemap.SetTileFlags(pos, TileFlags.None);
+                // Tint to a dark grey indicating burnt state
+                groundTilemap.SetColor(pos, new Color(0.25f, 0.25f, 0.25f, 1f));
             }
         }
 

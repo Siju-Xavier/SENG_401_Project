@@ -13,7 +13,7 @@ namespace BusinessLogic {
             Core.EventBroker.Instance.Unsubscribe(Core.EventType.LevelUp, OnLevelUp);
         }
 
-        private void Start() {
+        private void Awake() {
             if (fireEngine == null)
                 fireEngine = FindFirstObjectByType<FireEngine>();
 

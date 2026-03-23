@@ -24,15 +24,35 @@ namespace Presentation
         [SerializeField] private GameObject alertBanner;
         [SerializeField] private TextMeshProUGUI alertText;
 
+        [Header("Level Display")]
+        [SerializeField] private TextMeshProUGUI levelText;
+        [SerializeField] private TextMeshProUGUI timerText;
+
         [Header("Alert Settings")]
         [SerializeField] private float alertDuration = 3f;
+
+        [Header("Managers")]
+        [SerializeField] private BusinessLogic.ProgressionManager progressionManager;
 
         // ── Private State ────────────────────────────────────────────────────
         private Coroutine _alertCoroutine;
 
         // ── Unity Lifecycle ──────────────────────────────────────────────────
+        private void OnEnable()
+        {
+            Core.EventBroker.Instance.Subscribe(Core.EventType.LevelUp, OnLevelUp);
+        }
+
+        private void OnDisable()
+        {
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.LevelUp, OnLevelUp);
+        }
+
         private void Start()
         {
+            // Auto-find references to make setup easier
+            if (progressionManager == null) progressionManager = FindFirstObjectByType<BusinessLogic.ProgressionManager>();
+
             // Hide alert banner on start
             if (alertBanner != null) alertBanner.SetActive(false);
 
@@ -40,6 +60,19 @@ namespace Presentation
             UpdateBudgetDisplay(1000);
             UpdateReputationDisplay(50);
             UpdateRoundDisplay(1);
+            
+            // Set initial level
+            int initialLevel = progressionManager != null ? progressionManager.CurrentLevel : 1;
+            UpdateLevelDisplay(initialLevel);
+        }
+
+        private void OnLevelUp(object data)
+        {
+            if (data is int level)
+            {
+                UpdateLevelDisplay(level);
+                ShowAlert($"Level {level} Reached!");
+            }
         }
 
         // ── HUD Updates ──────────────────────────────────────────────────────
@@ -63,6 +96,23 @@ namespace Presentation
         {
             if (roundText != null)
                 roundText.text = $"Round {round}";
+        }
+
+        /// <summary>Updates the Level counter in the HUD.</summary>
+        public void UpdateLevelDisplay(int level)
+        {
+            if (levelText != null)
+                levelText.text = $"Lvl: {level}";
+        }
+
+        /// <summary>Updates the Round Timer counter in the HUD.</summary>
+        public void UpdateTimerDisplay(float timeRemaining)
+        {
+            if (timerText != null)
+            {
+                int seconds = Mathf.Max(0, Mathf.CeilToInt(timeRemaining));
+                timerText.text = $"Time: {seconds}s";
+            }
         }
 
         /// <summary>Convenience wrapper — updates all three HUD values at once.</summary>

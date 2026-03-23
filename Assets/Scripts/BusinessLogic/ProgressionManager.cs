@@ -40,6 +40,23 @@ namespace BusinessLogic {
             }
         }
 
+        /// <summary>Force a level up regardless of score (e.g. at the end of a round with no cities burned).</summary>
+        public void ForceLevelUp() {
+            if (progressionData == null) return;
+            
+            progressionData.CurrentLevel++;
+            Debug.Log($"[Progression] Forced Level up! Now level {progressionData.CurrentLevel}");
+            EventBroker.Instance.Publish(Core.EventType.LevelUp, progressionData.CurrentLevel);
+
+            string unlock = $"Level{progressionData.CurrentLevel}Reward";
+            if (!progressionData.UnlockedFeatures.Contains(unlock)) {
+                progressionData.UnlockedFeatures.Add(unlock);
+                StartCoroutine(PersistUnlock(unlock));
+            }
+
+            StartCoroutine(SyncProgressionToCloud());
+        }
+
         public int CurrentLevel => progressionData != null ? progressionData.CurrentLevel : 1;
 
         public int GetCurrentScore() {

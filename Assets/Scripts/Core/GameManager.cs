@@ -160,6 +160,10 @@ namespace Core {
             if (fireEngine != null) fireEngine.Resume();
         }
 
+        private void OnDestroy() {
+            EventBroker.Instance.Unsubscribe(Core.EventType.GameEnded, EndGame);
+        }
+
         public void EndGame(object data = null) {
             Debug.Log("[GameManager] Game ended — saving final state.");
 

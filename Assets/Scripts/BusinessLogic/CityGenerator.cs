@@ -64,6 +64,53 @@ namespace BusinessLogic
                     Debug.LogWarning($"Could not find valid position for city {i + 1} after {maxAttempts} attempts");
                 }
             }
+
+            AssignTerritories(grid, mapData);
+        }
+
+        private void AssignTerritories(GridSystem grid, MapData mapData)
+        {
+            if (grid.Regions.Count == 0) return;
+
+            float noiseFreq = 0.05f;
+            float noiseAmt = 8f;
+
+            for (int y = 0; y < grid.Height; y++)
+            {
+                for (int x = 0; x < grid.Width; x++)
+                {
+                    Tile tile = grid.GetTileAt(x, y);
+                    if (tile == null) continue;
+
+                    // Warp the coordinates with perlin noise to get an organic border
+                    float nx = x + (Mathf.PerlinNoise(x * noiseFreq, y * noiseFreq) - 0.5f) * noiseAmt;
+                    float ny = y + (Mathf.PerlinNoise(x * noiseFreq + 1000, y * noiseFreq + 1000) - 0.5f) * noiseAmt;
+                    Vector2 warpedPos = new Vector2(nx, ny);
+
+                    Region closestRegion = null;
+                    float minDistance = float.MaxValue;
+
+                    foreach (var region in grid.Regions)
+                    {
+                        City city = region.City;
+                        Vector2 cityPos = new Vector2(city.TileX, city.TileY);
+                        float dist = Vector2.Distance(warpedPos, cityPos);
+
+                        if (dist < minDistance)
+                        {
+                            minDistance = dist;
+                            closestRegion = region;
+                        }
+                    }
+
+                    if (closestRegion != null)
+                    {
+                        closestRegion.AddTile(tile);
+                    }
+                }
+            }
+            
+            Debug.Log("Territories assigned via organic Voronoi partitioning.");
         }
     }
 }

@@ -9,6 +9,7 @@ namespace GameState {
         [SerializeField] private bool isOnFire;
         [SerializeField] private float fireIntensity;
         [SerializeField] private float moistureLevel;
+        [SerializeField] private bool isCityFootprint;
 
         private Region region;
         private BiomeConfig biome;
@@ -18,6 +19,7 @@ namespace GameState {
         public bool IsOnFire { get => isOnFire; set => isOnFire = value; }
         public float FireIntensity { get => fireIntensity; set => fireIntensity = value; }
         public float MoistureLevel { get => moistureLevel; set => moistureLevel = value; }
+        public bool IsCityFootprint { get => isCityFootprint; set => isCityFootprint = value; }
         public Region Region { get => region; set => region = value; }
         public BiomeConfig Biome { get => biome; set => biome = value; }
 

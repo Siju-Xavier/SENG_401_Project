@@ -93,7 +93,7 @@ namespace Presentation.MapGeneration
                 if (decorationPlacer != null)
                     decorationPlacer.RemoveDecorationsInArea(startX, startY, config.FootprintWidth, config.FootprintHeight);
 
-                // Mark tiles as occupied by this region
+                // Mark tiles as occupied by this region's building footprint
                 for (int ty = startY; ty < startY + config.FootprintHeight; ty++)
                 {
                     for (int tx = startX; tx < startX + config.FootprintWidth; tx++)
@@ -101,7 +101,7 @@ namespace Presentation.MapGeneration
                         GameState.Tile tile = gridSystem.GetTileAt(tx, ty);
                         if (tile != null)
                         {
-                            region.AddTile(tile);
+                            tile.IsCityFootprint = true;
                         }
                     }
                 }

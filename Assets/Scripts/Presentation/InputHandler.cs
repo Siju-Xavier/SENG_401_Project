@@ -17,6 +17,9 @@ namespace Presentation
             if (mainCamera == null)
                 mainCamera = Camera.main;
 
+            if (groundTilemap == null)
+                groundTilemap = GameObject.FindObjectOfType<UnityEngine.Tilemaps.Tilemap>();
+
             resourceManager = FindFirstObjectByType<ResourceManager>();
         }
 
@@ -43,6 +46,23 @@ namespace Presentation
             Tile tile = gridSystem.GetTileAt(cellPos.x, cellPos.y);
             if (tile == null) return;
 
+            // Check if user clicked a city's footprint
+            if (tile.IsCityFootprint && tile.Region != null && tile.Region.City != null)
+            {
+                if (CityPanelController.Instance != null)
+                {
+                    CityPanelController.Instance.ShowPanel(tile.Region.City);
+                }
+
+                if (TerritoryRenderer.Instance != null)
+                {
+                    TerritoryRenderer.Instance.ShowBorders(tile.Region, gridSystem);
+                }
+                
+                return; // Consume click for the city
+            }
+
+            // Normal tile click
             if (tile.IsOnFire && resourceManager != null)
             {
                 resourceManager.DeployFirefighter(tile);

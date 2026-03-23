@@ -31,6 +31,7 @@ namespace Core
         public bool enableDecorations = true;
         public bool enableGridSystem = true;
         public bool enableCities = true;
+        public bool enableClouds = true;
 
         public bool autoUpdate;
 

@@ -28,10 +28,10 @@ namespace BusinessLogic {
         private void ApplyDifficulty(int level) {
             if (fireEngine == null) return;
 
-            float spreadChance = Mathf.Min(0.15f + (level - 1) * 0.02f, 0.45f);
-            float tickInterval = Mathf.Max(0.5f, 1.5f - (level - 1) * 0.08f);
-            int fireCount = 3 + (level - 1);
-            float growthRate = Mathf.Min(0.15f + (level - 1) * 0.01f, 0.4f);
+            float spreadChance = Mathf.Min(0.05f + (level - 1) * 0.02f, 0.45f);
+            float tickInterval = Mathf.Max(0.5f, 2.5f - (level - 1) * 0.08f);
+            int fireCount = 1 + (level - 1);
+            float growthRate = Mathf.Min(0.05f + (level - 1) * 0.01f, 0.4f);
 
             fireEngine.SetDifficulty(spreadChance, tickInterval, fireCount, growthRate);
             Debug.Log($"[DifficultyScaler] Level {level}: spread={spreadChance:F2}, interval={tickInterval:F2}, fires={fireCount}, growth={growthRate:F2}");

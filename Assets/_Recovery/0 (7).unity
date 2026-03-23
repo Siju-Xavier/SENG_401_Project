@@ -1791,7 +1791,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.ProgressionManager
   progressionData:
-    currentLevel: 100
+    currentLevel: 0
     currentScore: 0
     unlockedFeatures: []
   playerId: 1

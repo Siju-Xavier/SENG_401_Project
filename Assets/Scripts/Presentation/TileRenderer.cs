@@ -49,12 +49,14 @@ namespace Presentation {
             EventBroker.Instance.Subscribe(Core.EventType.FireStarted,      OnFireStarted);
             EventBroker.Instance.Subscribe(Core.EventType.FireSpread,       OnFireSpread);
             EventBroker.Instance.Subscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+            EventBroker.Instance.Subscribe(Core.EventType.FireNoLongerEdge, OnFireNoLongerEdge);
         }
 
         private void OnDisable() {
             EventBroker.Instance.Unsubscribe(Core.EventType.FireStarted,      OnFireStarted);
             EventBroker.Instance.Unsubscribe(Core.EventType.FireSpread,       OnFireSpread);
             EventBroker.Instance.Unsubscribe(Core.EventType.FireExtinguished, OnFireExtinguished);
+            EventBroker.Instance.Unsubscribe(Core.EventType.FireNoLongerEdge, OnFireNoLongerEdge);
         }
 
         // ── Event Handlers ───────────────────────────────────────────────
@@ -70,6 +72,18 @@ namespace Presentation {
             if (activeFireOverlays.TryGetValue(key, out var overlay)) {
                 // Play the "end" animation, then destroy
                 StartCoroutine(PlayEndAnimation(overlay, key));
+            }
+        }
+
+        private void OnFireNoLongerEdge(object data) {
+            var tile = data as GameState.Tile;
+            if (tile == null) return;
+
+            var key = new Vector2Int(tile.X, tile.Y);
+            if (activeFireOverlays.TryGetValue(key, out var overlay)) {
+                // Destroy the overlay without playing the end animation
+                if (overlay != null) Destroy(overlay);
+                activeFireOverlays.Remove(key);
             }
         }
 

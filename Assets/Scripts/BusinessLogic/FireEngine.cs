@@ -150,6 +150,14 @@ namespace BusinessLogic {
                 EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
             }
 
+            // Check for tiles that are no longer edges
+            foreach (var tile in snapshot) {
+                if (tile.IsOnFire && !IsEdgeTile(tile)) {
+                    // It's still on fire under the hood, but visually we want the animation to stop
+                    EventBroker.Instance.Publish(Core.EventType.FireNoLongerEdge, tile);
+                }
+            }
+
             // Remove tiles that somehow got extinguished mid-tick
             burningTiles.RemoveAll(t => !t.IsOnFire);
         }
@@ -241,6 +249,20 @@ namespace BusinessLogic {
                     IgniteTile(neighbour);
                 }
             }
+        }
+
+        /// <summary>Check if a tile has any non-burning flammable neighbors.</summary>
+        private bool IsEdgeTile(Tile tile) {
+            if (gridSystem == null) return true; // Default to true if no grid
+            
+            var neighbours = gridSystem.GetNeighbours(tile);
+            foreach (var neighbour in neighbours) {
+                // If there's a neighbour that is NOT on fire, BUT is flammable, we are still an edge
+                if (!neighbour.IsOnFire && neighbour.Biome != null && neighbour.Biome.SpreadMultiplier > 0f) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // ── Ignition / Extinguish ────────────────────────────────────────

@@ -12,9 +12,20 @@ namespace Presentation
     /// </summary>
     public static class GlobalPauseInitializer
     {
+        private static bool _initialized;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            _initialized = false;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         public static void Initialize()
         {
+            if (_initialized) return;
+            _initialized = true;
             SceneManager.sceneLoaded += OnSceneLoaded;
             CheckAndInit(SceneManager.GetActiveScene());
         }

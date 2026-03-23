@@ -1,6 +1,7 @@
 namespace Core {
     using System;
     using System.Collections.Generic;
+    using UnityEngine;
 
     public enum EventType { FireStarted, FireSpread, FireExtinguished, TileUpdated, BudgetChanged, GameEnded, LevelUp, RoundComplete, UnitDeployed, EnvironmentImpact }
 
@@ -9,6 +10,12 @@ namespace Core {
         public static EventBroker Instance => _instance ??= new EventBroker();
 
         private Dictionary<EventType, Action<object>> subscribers = new Dictionary<EventType, Action<object>>();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _instance = null;
+        }
 
         public void Subscribe(EventType type, Action<object> callback) {
             if (!subscribers.ContainsKey(type)) subscribers[type] = null;

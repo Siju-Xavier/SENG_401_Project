@@ -44,6 +44,10 @@ namespace Presentation.MapGeneration
             cityContainer = new GameObject("Cities");
             cityContainer.transform.SetParent(transform);
 
+            // In editor mode, mark as DontSave so it's never serialized
+            if (!Application.isPlaying)
+                cityContainer.hideFlags = HideFlags.DontSave;
+
             if (gridSystem == null || gridSystem.Regions == null) return;
             if (cityConfigs == null || cityConfigs.Length == 0) return;
 

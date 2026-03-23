@@ -51,6 +51,18 @@ namespace Presentation.MapGeneration
             SetTileDefault(tile.X, tile.Y);
         }
 
+        public void ClearMap()
+        {
+            if (groundTilemap != null)
+            {
+                groundTilemap.ClearAllTiles();
+#if UNITY_EDITOR
+                groundTilemap.ClearAllEditorPreviewTiles();
+#endif
+            }
+            mapData = null;
+        }
+
         // ── Map Rendering ────────────────────────────────────────────────
 
         public void RenderMap(MapData data)
@@ -63,7 +75,13 @@ namespace Presentation.MapGeneration
                 return;
             }
 
-            groundTilemap.ClearAllTiles();
+#if UNITY_EDITOR
+            bool preview = !Application.isPlaying;
+            if (preview)
+                groundTilemap.ClearAllEditorPreviewTiles();
+            else
+#endif
+                groundTilemap.ClearAllTiles();
 
             for (int y = 0; y < data.Height; y++)
             {
@@ -72,7 +90,13 @@ namespace Presentation.MapGeneration
                     BiomeConfig biome = data.BiomeGrid[x, y];
                     if (biome != null && biome.DefaultTile != null)
                     {
-                        groundTilemap.SetTile(new Vector3Int(x, y, 0), biome.DefaultTile);
+                        var pos = new Vector3Int(x, y, 0);
+#if UNITY_EDITOR
+                        if (preview)
+                            groundTilemap.SetEditorPreviewTile(pos, biome.DefaultTile);
+                        else
+#endif
+                            groundTilemap.SetTile(pos, biome.DefaultTile);
                     }
                 }
             }

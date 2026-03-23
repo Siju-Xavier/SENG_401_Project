@@ -13,10 +13,16 @@ namespace Presentation
         [SerializeField] private Sprite spriteBottomLeft;
         [SerializeField] private Sprite spriteBottomRight;
 
+        [Header("Animation")]
+        [SerializeField] private Sprite[] walkSprites;
+        [SerializeField] private float walkFrameRate = 12f;
+
         private Vector3 _targetPosition;
         private SpriteRenderer _spriteRenderer;
         private bool _isMoving;
         private bool _wasMoving;
+        private float _animationTimer;
+        private int _currentFrame;
 
         public System.Action OnArrived;
 
@@ -35,6 +41,7 @@ namespace Presentation
                 _isMoving = true;
                 _wasMoving = true;
                 MoveTowardsTarget();
+                UpdateAnimation();
             }
             else
             {
@@ -42,8 +49,33 @@ namespace Presentation
                 if (_wasMoving)
                 {
                     _wasMoving = false;
+                    _currentFrame = 0; // Reset to idle frame
+                    UpdateSpriteFrame(0);
                     OnArrived?.Invoke();
                 }
+            }
+        }
+
+        private void UpdateAnimation()
+        {
+            if (walkSprites == null || walkSprites.Length == 0) return;
+
+            _animationTimer += Time.deltaTime;
+            float frameDuration = 1f / walkFrameRate;
+
+            if (_animationTimer >= frameDuration)
+            {
+                _animationTimer -= frameDuration;
+                _currentFrame = (_currentFrame + 1) % walkSprites.Length;
+                UpdateSpriteFrame(Vector3.Distance(transform.position, _targetPosition) > stopDistance ? 1 : 0);
+            }
+        }
+
+        private void UpdateSpriteFrame(int moveSign)
+        {
+            if (walkSprites != null && walkSprites.Length > 0)
+            {
+                _spriteRenderer.sprite = walkSprites[_currentFrame];
             }
         }
 
@@ -51,18 +83,10 @@ namespace Presentation
         {
             Vector3 direction = (_targetPosition - transform.position).normalized;
 
-            // Swap sprite based on horizontal movement direction
+            // Swap sprite horizontally based on direction
             if (Mathf.Abs(direction.x) > 0.01f)
             {
-                if (spriteBottomLeft != null && spriteBottomRight != null)
-                {
-                    _spriteRenderer.sprite = direction.x < 0 ? spriteBottomLeft : spriteBottomRight;
-                }
-                else
-                {
-                    // Fallback to flipX if no directional sprites assigned
-                    _spriteRenderer.flipX = direction.x < 0;
-                }
+                _spriteRenderer.flipX = direction.x > 0;
             }
 
             transform.position = Vector3.MoveTowards(transform.position, _targetPosition, speed * Time.deltaTime);
@@ -74,10 +98,11 @@ namespace Presentation
             _targetPosition.z = transform.position.z;
         }
 
-        public void SetDirectionalSprites(Sprite bottomLeft, Sprite bottomRight)
+        public void SetDirectionalSprites(Sprite bottomLeft, Sprite bottomRight, Sprite[] walkAnim = null)
         {
             spriteBottomLeft = bottomLeft;
             spriteBottomRight = bottomRight;
+            walkSprites = walkAnim;
         }
 
         public void SetSpeed(float newSpeed)

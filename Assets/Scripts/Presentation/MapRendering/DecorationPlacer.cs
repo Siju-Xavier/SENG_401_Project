@@ -23,10 +23,28 @@ namespace Presentation.MapGeneration
         public void ClearDecorations()
         {
             decorationTiles.Clear();
-            tileCache.Clear();
 
             if (decorationTilemap != null)
+            {
                 decorationTilemap.ClearAllTiles();
+#if UNITY_EDITOR
+                decorationTilemap.ClearAllEditorPreviewTiles();
+#endif
+            }
+
+            // Destroy runtime ScriptableObject tile instances to prevent
+            // serialization hang during domain reload
+            foreach (var tile in tileCache.Values)
+            {
+                if (tile != null)
+                {
+                    if (Application.isPlaying)
+                        Destroy(tile);
+                    else
+                        DestroyImmediate(tile);
+                }
+            }
+            tileCache.Clear();
         }
 
         public void RemoveDecorationsInArea(int startX, int startY, int width, int height)
@@ -37,7 +55,13 @@ namespace Presentation.MapGeneration
             {
                 for (int x = startX; x < startX + width; x++)
                 {
-                    decorationTilemap.SetTile(new Vector3Int(x, y, 0), null);
+                    var pos = new Vector3Int(x, y, 0);
+#if UNITY_EDITOR
+                    if (!Application.isPlaying)
+                        decorationTilemap.SetEditorPreviewTile(pos, null);
+                    else
+#endif
+                        decorationTilemap.SetTile(pos, null);
                     decorationTiles.Remove(new Vector2Int(x, y));
                 }
             }
@@ -52,6 +76,10 @@ namespace Presentation.MapGeneration
                 Debug.LogWarning("DecorationPlacer: decorationTilemap not assigned.");
                 return;
             }
+
+#if UNITY_EDITOR
+            bool preview = !Application.isPlaying;
+#endif
 
             int width = mapData.Width;
             int height = mapData.Height;
@@ -102,7 +130,13 @@ namespace Presentation.MapGeneration
                     Sprite sprite = biome.DecorationSprites[rng.Next(biome.DecorationSprites.Length)];
                     TilemapTile tile = GetOrCreateTile(sprite);
 
-                    decorationTilemap.SetTile(new Vector3Int(x, y, 0), tile);
+                    var pos = new Vector3Int(x, y, 0);
+#if UNITY_EDITOR
+                    if (preview)
+                        decorationTilemap.SetEditorPreviewTile(pos, tile);
+                    else
+#endif
+                        decorationTilemap.SetTile(pos, tile);
                     decorationTiles.Add(new Vector2Int(x, y));
                     count++;
                 }

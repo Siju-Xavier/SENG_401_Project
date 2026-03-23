@@ -21,6 +21,12 @@ namespace BusinessLogic {
         public int GlobalBudget => globalAvailableBudget;
 
         private void Start() {
+#if UNITY_EDITOR
+            if (firefighterConfig == null) {
+                firefighterConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<ScriptableObjects.UnitConfig>("Assets/Sprites/ScriptableObjects/UnitConfig.asset");
+                Debug.LogWarning("[ResourceManager] Auto-assigned firefighterConfig from Assets because it was missing in the Inspector.");
+            }
+#endif
             fireEngine = FindFirstObjectByType<FireEngine>();
             groundTilemap = FindFirstObjectByType<UnityEngine.Tilemaps.Tilemap>();
         }
@@ -52,6 +58,43 @@ namespace BusinessLogic {
                 return;
             }
 
+            DeployFirefighterInternal(deployCity, targetTile);
+        }
+
+        public void DeployFirefighterFromCity(City deployCity) {
+            if (deployCity == null) return;
+
+            Tile targetFire = FindNearestFireToCity(deployCity);
+            if (targetFire == null) {
+                Debug.LogWarning("[ResourceManager] No active fires to deploy to.");
+                return;
+            }
+
+            if (deployCity.Budget < firefighterConfig.DeploymentCost) {
+                Debug.LogWarning($"[ResourceManager] {deployCity.CityName} doesn't have enough budget.");
+                return;
+            }
+
+            DeployFirefighterInternal(deployCity, targetFire);
+        }
+
+        private Tile FindNearestFireToCity(City city) {
+            if (fireEngine == null) return null;
+            Tile nearest = null;
+            float nearestDist = float.MaxValue;
+
+            foreach (var tile in fireEngine.GetBurningTiles()) {
+                float dist = (city.TileX - tile.X) * (city.TileX - tile.X)
+                           + (city.TileY - tile.Y) * (city.TileY - tile.Y);
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearest = tile;
+                }
+            }
+            return nearest;
+        }
+
+        private void DeployFirefighterInternal(City deployCity, Tile targetTile) {
             // Deduct cost
             deployCity.Budget -= firefighterConfig.DeploymentCost;
             globalAvailableBudget -= firefighterConfig.DeploymentCost;

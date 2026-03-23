@@ -25,11 +25,14 @@ namespace BusinessLogic {
         [SerializeField] private WeatherSystem weatherSystem;
         [Tooltip("Auto-populated at runtime if left empty.")]
         [SerializeField] private GridSystem    gridSystem;
+        [Tooltip("Auto-populated at runtime if left empty.")]
+        [SerializeField] private ProgressionManager progressionManager;
 
         private void Start() {
             // Auto-find references to make setup easier
             if (weatherSystem == null) weatherSystem = FindFirstObjectByType<WeatherSystem>();
             if (gridSystem == null) gridSystem = FindFirstObjectByType<GridSystem>();
+            if (progressionManager == null) progressionManager = FindFirstObjectByType<ProgressionManager>();
         }
 
         public void SetGridSystem(GridSystem grid) {
@@ -113,6 +116,9 @@ namespace BusinessLogic {
         public void Tick() {
             if (gridSystem == null) return;
 
+            // Random fire spawns based on level/policy
+            AutoIgniteTick();
+
             // Work on a snapshot so new ignitions don't affect this tick
             var snapshot = new List<Tile>(burningTiles);
 
@@ -146,6 +152,33 @@ namespace BusinessLogic {
 
             // Remove tiles that somehow got extinguished mid-tick
             burningTiles.RemoveAll(t => !t.IsOnFire);
+        }
+
+        /// <summary>Attempt to spawn random fires based on level and policy modifiers.</summary>
+        private void AutoIgniteTick() {
+            if (gridSystem == null) return;
+
+            // Base spawn chance per tick
+            float baseSpawnChance = 0.05f; 
+            
+            // Global level multiplier
+            float levelMultiplier = progressionManager != null ? progressionManager.GetGlobalSpawnMultiplier() : 1.0f;
+
+            // Pick a random tile to potentially ignite
+            int rx = Random.Range(0, gridSystem.Width);
+            int ry = Random.Range(0, gridSystem.Height);
+            Tile tile = gridSystem.GetTileAt(rx, ry);
+
+            if (tile == null || tile.IsOnFire || tile.Biome == null || tile.Biome.SpreadMultiplier <= 0f) return;
+
+            // Local policy modifier
+            float policyModifier = PolicyManager.Instance != null ? PolicyManager.Instance.GetSpawnModifierForRegion(tile.Region) : 1.0f;
+
+            float finalChance = baseSpawnChance * levelMultiplier * policyModifier;
+            if (Random.value < finalChance) {
+                Debug.Log($"[FireEngine] Auto-ignited ({tile.X},{tile.Y}) via AutoIgniteTick.");
+                IgniteTile(tile);
+            }
         }
 
         /// <summary>
@@ -191,9 +224,14 @@ namespace BusinessLogic {
                 float intensityBoost = sourceTile.FireIntensity / maxIntensity; // 0 to 1
 
                 // ── Final probability ──
+                float levelMultiplier = progressionManager != null ? progressionManager.GetGlobalSpreadMultiplier() : 1.0f;
+                float policyModifier = PolicyManager.Instance != null ? PolicyManager.Instance.GetSpreadModifierForRegion(neighbour.Region) : 1.0f;
+
                 float probability = baseSpreadChance
                     * biomeMultiplier
                     * windBonus
+                    * levelMultiplier
+                    * policyModifier
                     * (1f + intensityBoost)
                     * (1f - moisturePenalty * 0.7f);
 

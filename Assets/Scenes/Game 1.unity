@@ -427,7 +427,7 @@ MonoBehaviour:
   cityPlacer: {fileID: 86377202}
   gridSystem: {fileID: 5533442}
   cityGenerator: {fileID: 604701780}
-  seed: 0
+  seed: 1
   autoUpdate: 0
 --- !u!4 &38214636
 Transform:
@@ -33410,6 +33410,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.FireEngine
   weatherSystem: {fileID: 1831033177}
   gridSystem: {fileID: 5533442}
+  progressionManager: {fileID: 0}
   tickInterval: 1.5
   baseSpreadChance: 0.15
   windInfluence: 0.6

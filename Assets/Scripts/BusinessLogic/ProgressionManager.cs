@@ -51,6 +51,26 @@ namespace BusinessLogic {
             return progressionData != null && progressionData.CurrentLevel > 1;
         }
 
+        // ── Global Difficulty Multipliers ──────────────────────────────
+        
+        /// <summary>
+        /// Global multiplier for fire spread chance.
+        /// Level 1 = 1.0x, Level 2 = 1.1x, Level 3 = 1.2x...
+        /// </summary>
+        public float GetGlobalSpreadMultiplier() {
+            int level = CurrentLevel;
+            return 1.0f + (level - 1) * 0.1f;
+        }
+
+        /// <summary>
+        /// Global multiplier for random fire spawn chance.
+        /// Level 1 = 1.0x, Level 2 = 1.2x, Level 3 = 1.4x...
+        /// </summary>
+        public float GetGlobalSpawnMultiplier() {
+            int level = CurrentLevel;
+            return 1.0f + (level - 1) * 0.2f;
+        }
+
         // ── Cloud sync helpers ─────────────────────────────────────────
 
         private IEnumerator SyncProgressionToCloud() {

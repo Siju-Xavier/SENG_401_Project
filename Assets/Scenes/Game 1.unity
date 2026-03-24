@@ -446,6 +446,7 @@ MonoBehaviour:
   scoringSystem: {fileID: 626905185}
   autoSaveController: {fileID: 1235340864}
   progressionManager: {fileID: 363285927}
+  uiManager: {fileID: 0}
   playerId: 1
   roundDuration: 60
 --- !u!1 &363285925
@@ -2137,6 +2138,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.FireEngine
   weatherSystem: {fileID: 1831033177}
   gridSystem: {fileID: 5533442}
+  progressionManager: {fileID: 0}
   tickInterval: 1.5
   baseSpreadChance: 0.15
   windInfluence: 0.6
@@ -3369,11 +3371,11 @@ MonoBehaviour:
   morphScale: 20
   morphSpeed: 1.5
   morphStrength: 0.5
-  threshold: 0.4
-  windSpeed: {x: 1, y: 0.25}
-  updateInterval: 0.1
+  threshold: 0.6
+  windSpeed: {x: 2, y: 1}
+  updateInterval: 0.5
   maxOpacity: 0.4
-  opacityTiers: 4
+  opacityTiers: 5
 --- !u!1 &2047916653
 GameObject:
   m_ObjectHideFlags: 0

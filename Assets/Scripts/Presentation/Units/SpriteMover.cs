@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Presentation
@@ -16,6 +17,7 @@ namespace Presentation
         private SpriteRenderer _spriteRenderer;
         private bool _isMoving;
         private bool _wasMoving;
+        private Queue<Vector3> _waypoints = new Queue<Vector3>();
 
         public System.Action OnArrived;
 
@@ -40,20 +42,27 @@ namespace Presentation
             }
             else
             {
-                _isMoving = false;
-                if (_wasMoving)
+                // Reached current waypoint — check for more
+                if (_waypoints.Count > 0)
                 {
-                    _wasMoving = false;
-                    // Switch to standing sprite facing the last movement direction
-                    _spriteRenderer.sprite = PickSprite(_lastDirection, running: false);
-                    OnArrived?.Invoke();
+                    _targetPosition = _waypoints.Dequeue();
+                    _targetPosition.z = transform.position.z;
+                }
+                else
+                {
+                    _isMoving = false;
+                    if (_wasMoving)
+                    {
+                        _wasMoving = false;
+                        _spriteRenderer.sprite = PickSprite(_lastDirection, running: false);
+                        OnArrived?.Invoke();
+                    }
                 }
             }
         }
 
         private Sprite PickSprite(Vector3 direction, bool running)
         {
-            // Isometric quadrant: sign of x and y determines direction
             if (running)
             {
                 if (direction.x >= 0)
@@ -86,8 +95,27 @@ namespace Presentation
 
         public void SetTarget(Vector3 newTarget)
         {
+            _waypoints.Clear();
             _targetPosition = newTarget;
             _targetPosition.z = transform.position.z;
+        }
+
+        public void SetWaypoints(List<Vector3> waypoints)
+        {
+            _waypoints.Clear();
+            if (waypoints == null || waypoints.Count == 0) return;
+
+            // First waypoint becomes immediate target
+            _targetPosition = waypoints[0];
+            _targetPosition.z = transform.position.z;
+
+            // Rest go into queue
+            for (int i = 1; i < waypoints.Count; i++)
+            {
+                var wp = waypoints[i];
+                wp.z = transform.position.z;
+                _waypoints.Enqueue(wp);
+            }
         }
 
         public void SetSpeed(float newSpeed)

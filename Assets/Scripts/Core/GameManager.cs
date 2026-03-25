@@ -97,8 +97,10 @@ namespace Core {
 
         private void FinishStartGame() {
             // Initialize resource manager with city data
-            if (resourceManager != null && gridSystem != null)
+            if (resourceManager != null && gridSystem != null) {
                 resourceManager.Initialize(gridSystem.Regions);
+                resourceManager.SetGridSystem(gridSystem);
+            }
 
             // Wire input handler
             inputHandler = FindFirstObjectByType<InputHandler>();
@@ -157,8 +159,10 @@ namespace Core {
                 progressionManager.CheckScore();
             }
 
-            if (resourceManager != null)
-                resourceManager.AddRoundBudget();
+            if (resourceManager != null) {
+                int level = progressionManager != null ? progressionManager.CurrentLevel : 1;
+                resourceManager.AddRoundBudget(level);
+            }
 
             // Progress level if no city buildings burned
             if (!anyCityBurnedRound) {

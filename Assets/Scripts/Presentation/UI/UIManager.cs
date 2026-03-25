@@ -41,11 +41,13 @@ namespace Presentation
         private void OnEnable()
         {
             Core.EventBroker.Instance.Subscribe(Core.EventType.LevelUp, OnLevelUp);
+            Core.EventBroker.Instance.Subscribe(Core.EventType.BudgetChanged, OnBudgetChanged);
         }
 
         private void OnDisable()
         {
             Core.EventBroker.Instance.Unsubscribe(Core.EventType.LevelUp, OnLevelUp);
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.BudgetChanged, OnBudgetChanged);
         }
 
         private void Start()
@@ -64,6 +66,12 @@ namespace Presentation
             // Set initial level
             int initialLevel = progressionManager != null ? progressionManager.CurrentLevel : 1;
             UpdateLevelDisplay(initialLevel);
+        }
+
+        private void OnBudgetChanged(object data)
+        {
+            if (data is int budget)
+                UpdateBudgetDisplay(budget);
         }
 
         private void OnLevelUp(object data)

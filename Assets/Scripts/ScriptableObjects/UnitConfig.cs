@@ -15,12 +15,20 @@ namespace ScriptableObjects {
         [SerializeField] private Sprite standBottomLeft;
         [SerializeField] private Sprite standBottomRight;
 
+        [Header("Multi-Target")]
+        [Tooltip("Max tiles a firefighter can extinguish before returning")]
+        [SerializeField] private int maxTargets = 1;
+        [Tooltip("Max tile distance to search for next fire")]
+        [SerializeField] private int searchRadius = 10;
+
         [Header("Running Sprites (Movement)")]
         [SerializeField] private Sprite runTopLeft;
         [SerializeField] private Sprite runTopRight;
         [SerializeField] private Sprite runBottomLeft;
         [SerializeField] private Sprite runBottomRight;
 
+        public int MaxTargets => maxTargets;
+        public int SearchRadius => searchRadius;
         public int DeploymentCost => deploymentCost;
         public int MaxWaterCapacity => maxWaterCapacity;
         public float MoveSpeed => moveSpeed;

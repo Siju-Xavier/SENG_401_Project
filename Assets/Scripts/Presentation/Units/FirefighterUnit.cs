@@ -1,5 +1,6 @@
 namespace Presentation
 {
+    using System.Collections.Generic;
     using UnityEngine;
     using GameState;
     using BusinessLogic;
@@ -16,22 +17,31 @@ namespace Presentation
         private Vector3 homePosition;
         private Vector3 targetWorldPos;
         private UnitState state = UnitState.Idle;
-        private bool targetSet;
+
+        private int tilesExtinguished;
+        private GridSystem gridSystem;
+        private UnityEngine.Tilemaps.Tilemap groundTilemap;
 
         public UnitState State => state;
 
-        public void Initialize(FireEngine engine, UnitConfig unitConfig, Tile target, Vector3 home, Vector3 targetWorld)
+        public void Initialize(FireEngine engine, UnitConfig unitConfig, Tile target,
+                               Vector3 home, Vector3 targetWorld,
+                               GridSystem grid = null,
+                               UnityEngine.Tilemaps.Tilemap tilemap = null)
         {
             fireEngine = engine;
             config = unitConfig;
             targetTile = target;
             homePosition = home;
             targetWorldPos = targetWorld;
+            tilesExtinguished = 0;
+            gridSystem = grid;
+            groundTilemap = tilemap ?? Object.FindFirstObjectByType<UnityEngine.Tilemaps.Tilemap>();
 
             mover = GetComponent<SpriteMover>();
             spriteRenderer = GetComponent<SpriteRenderer>();
 
-            // Set 8 isometric directional sprites (4 standing + 4 running)
+            // Set 8 isometric directional sprites
             mover.SetDirectionalSprites(
                 config.StandTopLeft, config.StandTopRight,
                 config.StandBottomLeft, config.StandBottomRight,
@@ -39,7 +49,7 @@ namespace Presentation
                 config.RunBottomLeft, config.RunBottomRight);
             mover.SetSpeed(config.MoveSpeed);
 
-            // Set initial sprite to running direction toward target
+            // Set initial sprite facing target
             if (spriteRenderer != null)
             {
                 Vector3 dir = targetWorldPos - home;
@@ -48,24 +58,36 @@ namespace Presentation
                     initial = dir.y >= 0 ? config.RunTopRight : config.RunBottomRight;
                 else
                     initial = dir.y >= 0 ? config.RunTopLeft : config.RunBottomLeft;
-                if (initial != null)
-                    spriteRenderer.sprite = initial;
+                if (initial != null) spriteRenderer.sprite = initial;
             }
 
-            mover.OnArrived = OnArrivedAtTarget;
-            mover.SetTarget(targetWorldPos);
+            // Assign tile
+            TileAssignmentManager.Instance?.TryAssign(target, gameObject);
 
+            mover.OnArrived = OnArrivedAtTarget;
+            NavigateToTile(target, home);
             state = UnitState.EnRoute;
-            targetSet = true;
         }
 
         private void Update()
         {
+            // During EnRoute: check if target fire went out
+            if (state == UnitState.EnRoute && targetTile != null && !targetTile.IsOnFire)
+            {
+                TileAssignmentManager.Instance?.Unassign(targetTile);
+                tilesExtinguished++;
+                if (tilesExtinguished < config.MaxTargets)
+                    TryFindNextTarget();
+                else
+                    ReturnHome();
+                return;
+            }
+
             if (state == UnitState.Extinguishing && targetTile != null)
             {
                 if (!targetTile.IsOnFire)
                 {
-                    ReturnHome();
+                    OnTileExtinguished();
                     return;
                 }
 
@@ -74,15 +96,142 @@ namespace Presentation
                 if (targetTile.FireIntensity <= 0f)
                 {
                     fireEngine.ExtinguishTile(targetTile);
-                    ReturnHome();
+                    OnTileExtinguished();
                 }
             }
+        }
+
+        private void OnTileExtinguished()
+        {
+            tilesExtinguished++;
+            TileAssignmentManager.Instance?.Unassign(targetTile);
+
+            if (tilesExtinguished < config.MaxTargets)
+                TryFindNextTarget();
+            else
+                ReturnHome();
+        }
+
+        private void TryFindNextTarget()
+        {
+            if (fireEngine == null)
+            {
+                ReturnHome();
+                return;
+            }
+
+            var burningTiles = fireEngine.GetBurningTiles();
+            Tile nextTile = null;
+
+            // Use assignment manager if available, otherwise find nearest burning tile directly
+            if (TileAssignmentManager.Instance != null)
+            {
+                nextTile = TileAssignmentManager.Instance.FindNearestUnassigned(
+                    burningTiles, targetTile.X, targetTile.Y);
+            }
+            else
+            {
+                float nearestDist = float.MaxValue;
+                foreach (var tile in burningTiles)
+                {
+                    if (!tile.IsOnFire || tile == targetTile) continue;
+                    float d = (targetTile.X - tile.X) * (targetTile.X - tile.X)
+                            + (targetTile.Y - tile.Y) * (targetTile.Y - tile.Y);
+                    if (d < nearestDist) { nearestDist = d; nextTile = tile; }
+                }
+            }
+
+            if (nextTile == null)
+            {
+                ReturnHome();
+                return;
+            }
+
+            // Check search radius
+            float dist = Mathf.Sqrt(
+                (nextTile.X - targetTile.X) * (nextTile.X - targetTile.X) +
+                (nextTile.Y - targetTile.Y) * (nextTile.Y - targetTile.Y));
+            if (dist > config.SearchRadius)
+            {
+                ReturnHome();
+                return;
+            }
+
+            TileAssignmentManager.Instance?.TryAssign(nextTile, gameObject);
+
+            Debug.Log($"[Firefighter] Chaining to next fire at ({nextTile.X}, {nextTile.Y}), tiles done: {tilesExtinguished}/{config.MaxTargets}");
+
+            var fromTile = targetTile;
+            targetTile = nextTile;
+
+            mover.OnArrived = OnArrivedAtTarget;
+            NavigateToTile(nextTile, TileToWorld(fromTile));
+            state = UnitState.EnRoute;
+        }
+
+        private void NavigateToTile(Tile target, Vector3 fromWorldPos)
+        {
+            targetWorldPos = TileToWorld(target);
+
+            // Try grid pathfinding if available
+            if (gridSystem != null && groundTilemap != null)
+            {
+                // Find the tile closest to current position
+                var cellPos = groundTilemap.WorldToCell(fromWorldPos);
+                var startTile = gridSystem.GetTileAt(cellPos.x, cellPos.y);
+
+                if (startTile != null)
+                {
+                    var path = GridPathfinder.FindPath(gridSystem, startTile, target);
+                    if (path != null && path.Count > 1)
+                    {
+                        var waypoints = new List<Vector3>();
+                        for (int i = 1; i < path.Count; i++)
+                            waypoints.Add(TileToWorld(path[i]));
+                        mover.SetWaypoints(waypoints);
+                        return;
+                    }
+                }
+            }
+
+            // Fallback: direct movement
+            mover.SetTarget(targetWorldPos);
+        }
+
+        private Vector3 TileToWorld(Tile tile)
+        {
+            if (groundTilemap != null)
+                return groundTilemap.GetCellCenterWorld(new Vector3Int(tile.X, tile.Y, 0));
+            return new Vector3(tile.X, tile.Y, 0);
         }
 
         private void ReturnHome()
         {
             state = UnitState.Returning;
             mover.OnArrived = OnArrivedHome;
+
+            // Use grid pathfinding for return trip too
+            if (gridSystem != null && groundTilemap != null)
+            {
+                var cellPos = groundTilemap.WorldToCell(transform.position);
+                var startTile = gridSystem.GetTileAt(cellPos.x, cellPos.y);
+                var homeCell = groundTilemap.WorldToCell(homePosition);
+                var homeTile = gridSystem.GetTileAt(homeCell.x, homeCell.y);
+
+                if (startTile != null && homeTile != null)
+                {
+                    var path = GridPathfinder.FindPath(gridSystem, startTile, homeTile);
+                    if (path != null && path.Count > 1)
+                    {
+                        var waypoints = new List<Vector3>();
+                        for (int i = 1; i < path.Count; i++)
+                            waypoints.Add(TileToWorld(path[i]));
+                        mover.SetWaypoints(waypoints);
+                        return;
+                    }
+                }
+            }
+
             mover.SetTarget(homePosition);
         }
 
@@ -94,7 +243,12 @@ namespace Presentation
             }
             else
             {
-                ReturnHome();
+                TileAssignmentManager.Instance?.Unassign(targetTile);
+                tilesExtinguished++;
+                if (tilesExtinguished < config.MaxTargets)
+                    TryFindNextTarget();
+                else
+                    ReturnHome();
             }
         }
 
@@ -102,6 +256,11 @@ namespace Presentation
         {
             state = UnitState.Idle;
             Destroy(gameObject);
+        }
+
+        private void OnDestroy()
+        {
+            TileAssignmentManager.Instance?.UnassignAll(gameObject);
         }
     }
 }

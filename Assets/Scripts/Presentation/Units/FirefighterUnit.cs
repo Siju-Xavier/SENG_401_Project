@@ -31,13 +31,26 @@ namespace Presentation
             mover = GetComponent<SpriteMover>();
             spriteRenderer = GetComponent<SpriteRenderer>();
 
-            // Set directional sprites and speed from config
-            mover.SetDirectionalSprites(config.SpriteBottomLeft, config.SpriteBottomRight, config.WalkSprites);
+            // Set 8 isometric directional sprites (4 standing + 4 running)
+            mover.SetDirectionalSprites(
+                config.StandTopLeft, config.StandTopRight,
+                config.StandBottomLeft, config.StandBottomRight,
+                config.RunTopLeft, config.RunTopRight,
+                config.RunBottomLeft, config.RunBottomRight);
             mover.SetSpeed(config.MoveSpeed);
 
-            // Set initial sprite
-            if (spriteRenderer != null && config.SpriteBottomRight != null)
-                spriteRenderer.sprite = config.SpriteBottomRight;
+            // Set initial sprite to running direction toward target
+            if (spriteRenderer != null)
+            {
+                Vector3 dir = targetWorldPos - home;
+                Sprite initial;
+                if (dir.x >= 0)
+                    initial = dir.y >= 0 ? config.RunTopRight : config.RunBottomRight;
+                else
+                    initial = dir.y >= 0 ? config.RunTopLeft : config.RunBottomLeft;
+                if (initial != null)
+                    spriteRenderer.sprite = initial;
+            }
 
             mover.OnArrived = OnArrivedAtTarget;
             mover.SetTarget(targetWorldPos);

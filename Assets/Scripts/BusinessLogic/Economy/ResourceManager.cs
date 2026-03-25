@@ -109,6 +109,7 @@ namespace BusinessLogic {
             }
 
             var unitGO = Instantiate(firefighterConfig.UnitPrefab);
+            spawnPos.z = unitGO.transform.position.z; // preserve prefab Z depth
             unitGO.transform.position = spawnPos;
             unitGO.name = $"Firefighter_{deployCity.CityName}";
 

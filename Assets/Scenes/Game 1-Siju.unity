@@ -940,6 +940,13 @@ MonoBehaviour:
   gridSystem: {fileID: 5533442}
   cityGenerator: {fileID: 604701780}
   seed: 0
+  enableNoiseAndBiomes: 1
+  enableBiomeTilemap: 1
+  enableVegetation: 1
+  enableDecorations: 1
+  enableGridSystem: 1
+  enableCities: 1
+  enableClouds: 1
   autoUpdate: 0
 --- !u!4 &38214636
 Transform:
@@ -1189,7 +1196,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -1965,6 +1972,7 @@ MonoBehaviour:
   scoringSystem: {fileID: 626905185}
   autoSaveController: {fileID: 1235340864}
   progressionManager: {fileID: 363285927}
+  uiManager: {fileID: 0}
   playerId: 1
   roundDuration: 60
 --- !u!1 &182403563
@@ -34099,7 +34107,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -36672,6 +36680,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.FireEngine
   weatherSystem: {fileID: 1831033177}
   gridSystem: {fileID: 5533442}
+  progressionManager: {fileID: 0}
   tickInterval: 1.5
   baseSpreadChance: 0.15
   windInfluence: 0.6
@@ -37229,7 +37238,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -38451,6 +38460,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.TerritoryRenderer
   groundTilemap: {fileID: 0}
   borderColor: {r: 0, g: 0.8, b: 1, a: 0.5}
+  borderWidth: 0.06
+  lineMaterial: {fileID: 0}
 --- !u!4 &1248802527
 Transform:
   m_ObjectHideFlags: 0
@@ -145103,7 +145114,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2

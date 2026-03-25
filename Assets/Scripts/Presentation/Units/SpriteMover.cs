@@ -5,24 +5,17 @@ namespace Presentation
     [RequireComponent(typeof(SpriteRenderer))]
     public class SpriteMover : MonoBehaviour
     {
-        [Header("Movement Settings")]
         [SerializeField] private float speed = 5f;
         [SerializeField] private float stopDistance = 0.1f;
 
-        [Header("Directional Sprites")]
-        [SerializeField] private Sprite spriteBottomLeft;
-        [SerializeField] private Sprite spriteBottomRight;
-
-        [Header("Animation")]
-        [SerializeField] private Sprite[] walkSprites;
-        [SerializeField] private float walkFrameRate = 12f;
+        private Sprite _standTopLeft, _standTopRight, _standBottomLeft, _standBottomRight;
+        private Sprite _runTopLeft, _runTopRight, _runBottomLeft, _runBottomRight;
 
         private Vector3 _targetPosition;
+        private Vector3 _lastDirection;
         private SpriteRenderer _spriteRenderer;
         private bool _isMoving;
         private bool _wasMoving;
-        private float _animationTimer;
-        private int _currentFrame;
 
         public System.Action OnArrived;
 
@@ -40,8 +33,10 @@ namespace Presentation
             {
                 _isMoving = true;
                 _wasMoving = true;
-                MoveTowardsTarget();
-                UpdateAnimation();
+
+                _lastDirection = (_targetPosition - transform.position).normalized;
+                _spriteRenderer.sprite = PickSprite(_lastDirection, running: true);
+                transform.position = Vector3.MoveTowards(transform.position, _targetPosition, speed * Time.deltaTime);
             }
             else
             {
@@ -49,60 +44,50 @@ namespace Presentation
                 if (_wasMoving)
                 {
                     _wasMoving = false;
-                    _currentFrame = 0; // Reset to idle frame
-                    UpdateSpriteFrame(0);
+                    // Switch to standing sprite facing the last movement direction
+                    _spriteRenderer.sprite = PickSprite(_lastDirection, running: false);
                     OnArrived?.Invoke();
                 }
             }
         }
 
-        private void UpdateAnimation()
+        private Sprite PickSprite(Vector3 direction, bool running)
         {
-            if (walkSprites == null || walkSprites.Length == 0) return;
-
-            _animationTimer += Time.deltaTime;
-            float frameDuration = 1f / walkFrameRate;
-
-            if (_animationTimer >= frameDuration)
+            // Isometric quadrant: sign of x and y determines direction
+            if (running)
             {
-                _animationTimer -= frameDuration;
-                _currentFrame = (_currentFrame + 1) % walkSprites.Length;
-                UpdateSpriteFrame(Vector3.Distance(transform.position, _targetPosition) > stopDistance ? 1 : 0);
+                if (direction.x >= 0)
+                    return direction.y >= 0 ? _runTopRight : _runBottomRight;
+                else
+                    return direction.y >= 0 ? _runTopLeft : _runBottomLeft;
+            }
+            else
+            {
+                if (direction.x >= 0)
+                    return direction.y >= 0 ? _standTopRight : _standBottomRight;
+                else
+                    return direction.y >= 0 ? _standTopLeft : _standBottomLeft;
             }
         }
 
-        private void UpdateSpriteFrame(int moveSign)
+        public void SetDirectionalSprites(
+            Sprite standTL, Sprite standTR, Sprite standBL, Sprite standBR,
+            Sprite runTL, Sprite runTR, Sprite runBL, Sprite runBR)
         {
-            if (walkSprites != null && walkSprites.Length > 0)
-            {
-                _spriteRenderer.sprite = walkSprites[_currentFrame];
-            }
-        }
-
-        private void MoveTowardsTarget()
-        {
-            Vector3 direction = (_targetPosition - transform.position).normalized;
-
-            // Swap sprite horizontally based on direction
-            if (Mathf.Abs(direction.x) > 0.01f)
-            {
-                _spriteRenderer.flipX = direction.x > 0;
-            }
-
-            transform.position = Vector3.MoveTowards(transform.position, _targetPosition, speed * Time.deltaTime);
+            _standTopLeft = standTL;
+            _standTopRight = standTR;
+            _standBottomLeft = standBL;
+            _standBottomRight = standBR;
+            _runTopLeft = runTL;
+            _runTopRight = runTR;
+            _runBottomLeft = runBL;
+            _runBottomRight = runBR;
         }
 
         public void SetTarget(Vector3 newTarget)
         {
             _targetPosition = newTarget;
             _targetPosition.z = transform.position.z;
-        }
-
-        public void SetDirectionalSprites(Sprite bottomLeft, Sprite bottomRight, Sprite[] walkAnim = null)
-        {
-            spriteBottomLeft = bottomLeft;
-            spriteBottomRight = bottomRight;
-            walkSprites = walkAnim;
         }
 
         public void SetSpeed(float newSpeed)

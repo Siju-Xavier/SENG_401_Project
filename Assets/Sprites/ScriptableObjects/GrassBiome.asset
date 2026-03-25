@@ -18,6 +18,7 @@ MonoBehaviour:
   burningSprite: {fileID: 0}
   defaultTile: {fileID: 11400000, guid: fe536fe96842a468d85fb21308eba69a, type: 2}
   burningTile: {fileID: 11400000, guid: 446a72c034f7e2142acac08659561cbc, type: 2}
+  burntTile: {fileID: 11400000, guid: 446a72c034f7e2142acac08659561cbc, type: 2}
   vegetationSprites: []
   burningVegetationSprite: {fileID: 0}
   decorationSprites: []

@@ -15,8 +15,6 @@ namespace Presentation
     {
         // ── Inspector References ─────────────────────────────────────────────
         [Header("HUD Text")]
-        [SerializeField] private TextMeshProUGUI budgetText;
-        [SerializeField] private TextMeshProUGUI reputationText;
         [SerializeField] private TextMeshProUGUI roundText;
 
         [Header("Alert Banner")]
@@ -27,40 +25,39 @@ namespace Presentation
         [Header("Level Display")]
         [SerializeField] private TextMeshProUGUI levelText;
         [SerializeField] private TextMeshProUGUI timerText;
+        [SerializeField] private TextMeshProUGUI firesCountText;
 
         [Header("Alert Settings")]
         [SerializeField] private float alertDuration = 3f;
 
         [Header("Managers")]
         [SerializeField] private BusinessLogic.ProgressionManager progressionManager;
-
+        
         // ── Private State ────────────────────────────────────────────────────
         private Coroutine _alertCoroutine;
+        private BusinessLogic.FireEngine fireEngine;
 
         // ── Unity Lifecycle ──────────────────────────────────────────────────
         private void OnEnable()
         {
             Core.EventBroker.Instance.Subscribe(Core.EventType.LevelUp, OnLevelUp);
-            Core.EventBroker.Instance.Subscribe(Core.EventType.BudgetChanged, OnBudgetChanged);
         }
 
         private void OnDisable()
         {
             Core.EventBroker.Instance.Unsubscribe(Core.EventType.LevelUp, OnLevelUp);
-            Core.EventBroker.Instance.Unsubscribe(Core.EventType.BudgetChanged, OnBudgetChanged);
         }
 
         private void Start()
         {
             // Auto-find references to make setup easier
             if (progressionManager == null) progressionManager = FindFirstObjectByType<BusinessLogic.ProgressionManager>();
+            if (fireEngine == null) fireEngine = FindFirstObjectByType<BusinessLogic.FireEngine>();
 
             // Hide alert banner on start
             if (alertBanner != null) alertBanner.SetActive(false);
 
             // Show default values
-            UpdateBudgetDisplay(1000);
-            UpdateReputationDisplay(50);
             UpdateRoundDisplay(1);
             
             // Set initial level
@@ -68,11 +65,14 @@ namespace Presentation
             UpdateLevelDisplay(initialLevel);
         }
 
-        private void OnBudgetChanged(object data)
+        private void Update()
         {
-            if (data is int budget)
-                UpdateBudgetDisplay(budget);
+            if (firesCountText != null && fireEngine != null) {
+                firesCountText.text = $"# of Fires: {fireEngine.BurningTileCount}";
+            }
         }
+
+
 
         private void OnLevelUp(object data)
         {
@@ -84,20 +84,6 @@ namespace Presentation
         }
 
         // ── HUD Updates ──────────────────────────────────────────────────────
-
-        /// <summary>Updates the Budget text in the HUD.</summary>
-        public void UpdateBudgetDisplay(int currentBudget)
-        {
-            if (budgetText != null)
-                budgetText.text = $"💰 ${currentBudget}";
-        }
-
-        /// <summary>Updates the Reputation text in the HUD.</summary>
-        public void UpdateReputationDisplay(int currentReputation)
-        {
-            if (reputationText != null)
-                reputationText.text = $"⭐ {currentReputation}";
-        }
 
         /// <summary>Updates the Round/Tick counter in the HUD.</summary>
         public void UpdateRoundDisplay(int round)
@@ -123,11 +109,9 @@ namespace Presentation
             }
         }
 
-        /// <summary>Convenience wrapper — updates all three HUD values at once.</summary>
-        public void UpdateProgressionDisplay(int budget, int reputation, int round)
+        /// <summary>Convenience wrapper — updates HUD values.</summary>
+        public void UpdateProgressionDisplay(int round)
         {
-            UpdateBudgetDisplay(budget);
-            UpdateReputationDisplay(reputation);
             UpdateRoundDisplay(round);
         }
 

@@ -15,7 +15,6 @@ namespace Core {
         [SerializeField] private WeatherSystem weatherSystem;
         [SerializeField] private FireEngine fireEngine;
         [SerializeField] private SaveManager saveManager;
-        [SerializeField] private ScoringSystem scoringSystem;
         [SerializeField] private AutoSaveController autoSaveController;
         [SerializeField] private ProgressionManager progressionManager;
         [SerializeField] private UIManager uiManager;
@@ -44,7 +43,6 @@ namespace Core {
             if (fireEngine == null) fireEngine = FindFirstObjectByType<FireEngine>();
             if (weatherSystem == null) weatherSystem = FindFirstObjectByType<WeatherSystem>();
             if (resourceManager == null) resourceManager = FindFirstObjectByType<ResourceManager>();
-            if (scoringSystem == null) scoringSystem = FindFirstObjectByType<ScoringSystem>();
             if (progressionManager == null) progressionManager = FindFirstObjectByType<ProgressionManager>();
             if (saveManager == null) saveManager = FindFirstObjectByType<SaveManager>();
             if (autoSaveController == null) autoSaveController = FindFirstObjectByType<AutoSaveController>();
@@ -126,10 +124,16 @@ namespace Core {
             roundTimer -= Time.deltaTime;
             if (uiManager != null) uiManager.UpdateTimerDisplay(roundTimer);
 
-            if (roundTimer <= 0f || (fireEngine != null && fireEngine.BurningTileCount == 0 && roundTimer < roundDuration - 5f)) {
+            // End round ONLY when timer runs out
+            if (roundTimer <= 0f) {
                 EndRound();
             }
         }
+
+        [Tooltip("Seconds to wait before fires ignite at the start of each round.")]
+        [SerializeField] private float fireIgnitionDelay = 5f;
+
+        public bool IsRoundActive => roundActive;
 
         private void StartRound() {
             Debug.Log($"[GameManager] Round {currentRound} started.");
@@ -137,7 +141,14 @@ namespace Core {
             roundActive = true;
             anyCityBurnedRound = false;
 
-            if (fireEngine != null)
+            // Give the player a breather before fires ignite
+            StartCoroutine(DelayedFireIgnition());
+        }
+
+        private IEnumerator DelayedFireIgnition() {
+            yield return new WaitForSeconds(fireIgnitionDelay);
+
+            if (roundActive && fireEngine != null)
                 fireEngine.StartRandomFires();
         }
 
@@ -145,19 +156,7 @@ namespace Core {
             roundActive = false;
             Debug.Log($"[GameManager] Round {currentRound} ended.");
 
-            // Score based on remaining fires (fewer = better)
             int burningCount = fireEngine != null ? fireEngine.BurningTileCount : 0;
-            int baseScore = 50 + (currentRound * 10);
-            int firesPenalty = burningCount * 5;
-            int roundScore = Mathf.Max(0, baseScore - firesPenalty);
-
-            if (scoringSystem != null)
-                scoringSystem.CalculateScore(burningCount);
-
-            if (progressionManager != null) {
-                progressionManager.AddToScore(roundScore);
-                progressionManager.CheckScore();
-            }
 
             if (resourceManager != null) {
                 int level = progressionManager != null ? progressionManager.CurrentLevel : 1;
@@ -170,17 +169,17 @@ namespace Core {
                 if (progressionManager != null) {
                     progressionManager.ForceLevelUp();
                 }
-
                 if (fireEngine != null) {
                     fireEngine.ExtinguishAllFires();
-                    fireEngine.RecoverBurntTiles(0.25f); // 25% recover rate
+                    float recoveryRate = progressionManager != null ? progressionManager.GetRecoveryRate() : 0.25f;
+                    fireEngine.RecoverBurntTiles(recoveryRate);
                 }
             } else {
                 Debug.Log("[GameManager] A city was damaged this round. No level progression.");
             }
 
             EventBroker.Instance.Publish(Core.EventType.RoundComplete, currentRound);
-            Debug.Log($"[GameManager] Score: +{roundScore} (fires remaining: {burningCount})");
+            Debug.Log($"[GameManager] Round complete (fires remaining: {burningCount})");
 
             currentRound++;
             StartRound();
@@ -198,14 +197,6 @@ namespace Core {
 
         public void EndGame(object data = null) {
             Debug.Log("[GameManager] Game ended — saving final state.");
-
-            // Save game stats to cloud
-            if (scoringSystem != null) {
-                StartCoroutine(scoringSystem.SaveStatsToCloud(playerId, currentRound,
-                    gridSystem != null ? gridSystem.Width : 64,
-                    gridSystem != null ? gridSystem.Height : 64,
-                    gridSystem != null ? gridSystem.Regions.Count : 0));
-            }
 
             // Final save via the active IStorageProvider (local or cloud)
             if (saveManager != null) {
@@ -279,7 +270,6 @@ namespace Core {
                     if (region.City != null) {
                         rs.cities.Add(new SaveManager.CityStatusSave {
                             cityName    = region.City.CityName,
-                            reputation  = region.City.Reputation,
                             budget      = region.City.Budget,
                             isUnderThreat = region.City.IsOnFire
                         });

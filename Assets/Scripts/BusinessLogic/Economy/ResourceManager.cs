@@ -15,9 +15,10 @@ namespace BusinessLogic {
         private UnityEngine.Tilemaps.Tilemap groundTilemap;
         private List<City> managedCities = new List<City>();
         private List<GameObject> activeUnits = new List<GameObject>();
-        private List<ICityIncomeModifier> incomeModifiers = new List<ICityIncomeModifier>();
-
         private int globalAvailableBudget;
+        private GameManager gameManager;
+        private Dictionary<City, float> incomeAccumulators = new Dictionary<City, float>();
+        private List<ICityIncomeModifier> incomeModifiers = new List<ICityIncomeModifier>();
 
         public int GlobalBudget => globalAvailableBudget;
 
@@ -34,6 +35,7 @@ namespace BusinessLogic {
 #endif
             fireEngine = FindFirstObjectByType<FireEngine>();
             groundTilemap = FindFirstObjectByType<UnityEngine.Tilemaps.Tilemap>();
+            gameManager = FindFirstObjectByType<GameManager>();
         }
 
         public void Initialize(List<Region> regions) {
@@ -50,6 +52,42 @@ namespace BusinessLogic {
 
         public void SetGridSystem(GridSystem grid) {
             gridSystem = grid;
+        }
+
+        private void Update() {
+            if (activeUnits == null) return;
+            if (gameManager == null || !gameManager.IsRoundActive) return;
+
+            int currentLevel = GetCurrentLevel();
+            float baseIncomeRate = economyConfig != null ? economyConfig.BaseIncomePerSecond : 1f;
+            float increaseRate = economyConfig != null ? economyConfig.IncomeIncreasePerSecondPerLevel : 0.2f;
+            float incomePerSecond = baseIncomeRate + (currentLevel - 1) * increaseRate;
+
+            bool budgetChanged = false;
+            foreach (var city in managedCities) {
+                if (!incomeAccumulators.ContainsKey(city)) incomeAccumulators[city] = 0f;
+                
+                // Allow policies to modify continuous income
+                float finalIncomeRate = incomePerSecond;
+                foreach (var modifier in incomeModifiers) {
+                    if (modifier.IsActive)
+                        finalIncomeRate = modifier.ModifyIncome(city, (int)finalIncomeRate, currentLevel);
+                }
+
+                incomeAccumulators[city] += finalIncomeRate * Time.deltaTime;
+
+                if (incomeAccumulators[city] >= 1f) {
+                    int add = Mathf.FloorToInt(incomeAccumulators[city]);
+                    city.Budget += add;
+                    incomeAccumulators[city] -= add;
+                    budgetChanged = true;
+                }
+            }
+
+            if (budgetChanged) {
+                RecalculateGlobalBudget();
+                EventBroker.Instance.Publish(Core.EventType.BudgetChanged, globalAvailableBudget);
+            }
         }
 
         // ── Income Modifier Pipeline (Open-Closed) ───────────────────────
@@ -71,12 +109,23 @@ namespace BusinessLogic {
         }
 
         public void AddRoundBudget(int currentLevel) {
-            int baseIncome = economyConfig != null
-                ? economyConfig.BaseIncomePerRound + currentLevel * economyConfig.IncomeIncreasePerLevel
-                : 500;
+            int rewardPerUnburnt = economyConfig != null ? economyConfig.RewardPerUnburntTile : 2;
 
             foreach (var city in managedCities) {
-                int income = baseIncome;
+                // Find all tiles in this city's region
+                int unburntTiles = 0;
+                if (gridSystem != null) {
+                    for (int x = 0; x < gridSystem.Width; x++) {
+                        for (int y = 0; y < gridSystem.Height; y++) {
+                            var t = gridSystem.GetTileAt(x, y);
+                            if (t != null && t.Region != null && t.Region.City == city && !t.IsBurnt) {
+                                unburntTiles++;
+                            }
+                        }
+                    }
+                }
+
+                int income = unburntTiles * rewardPerUnburnt;
 
                 // Apply registered modifiers (policies, bonuses, etc.)
                 foreach (var modifier in incomeModifiers) {
@@ -90,7 +139,7 @@ namespace BusinessLogic {
 
             RecalculateGlobalBudget();
             EventBroker.Instance.Publish(Core.EventType.BudgetChanged, globalAvailableBudget);
-            Debug.Log($"[ResourceManager] Round income distributed. Total: {globalAvailableBudget}");
+            Debug.Log($"[ResourceManager] Round income distributed based on unburnt tiles. Total: {globalAvailableBudget}");
         }
 
         // ── Deployment ───────────────────────────────────────────────────

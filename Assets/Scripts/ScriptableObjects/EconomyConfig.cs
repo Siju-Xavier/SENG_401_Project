@@ -5,12 +5,16 @@ namespace ScriptableObjects
     [CreateAssetMenu(fileName = "EconomyConfig", menuName = "Config/Economy")]
     public class EconomyConfig : ScriptableObject
     {
-        [Header("City Income")]
-        [Tooltip("Base income each city receives per round")]
-        [SerializeField] private int baseIncomePerRound = 500;
+        [Header("Continuous Income")]
+        [Tooltip("Base income per second for each city.")]
+        [SerializeField] private float baseIncomePerSecond = 1.0f;
 
-        [Tooltip("Additional income per level (additive: baseIncome + level * this)")]
-        [SerializeField] private int incomeIncreasePerLevel = 50;
+        [Tooltip("Increase in income per second per level.")]
+        [SerializeField] private float incomeIncreasePerSecondPerLevel = 0.2f;
+
+        [Header("Round Rewards")]
+        [Tooltip("Money awarded per unburnt tile in a city's region at the end of a round.")]
+        [SerializeField] private int rewardPerUnburntTile = 2;
 
         [Header("Deployment Costs")]
         [Tooltip("Base cost to deploy a firefighter")]
@@ -22,8 +26,9 @@ namespace ScriptableObjects
         [Header("Initial Values")]
         [SerializeField] private int initialCityBudget = 1000;
 
-        public int BaseIncomePerRound => baseIncomePerRound;
-        public int IncomeIncreasePerLevel => incomeIncreasePerLevel;
+        public float BaseIncomePerSecond => baseIncomePerSecond;
+        public float IncomeIncreasePerSecondPerLevel => incomeIncreasePerSecondPerLevel;
+        public int RewardPerUnburntTile => rewardPerUnburntTile;
         public int BaseDeploymentCost => baseDeploymentCost;
         public int CostIncreasePerLevel => costIncreasePerLevel;
         public int InitialCityBudget => initialCityBudget;

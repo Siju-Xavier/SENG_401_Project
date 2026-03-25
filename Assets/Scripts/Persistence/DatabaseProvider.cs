@@ -170,13 +170,12 @@ namespace Persistence
                 ? req.downloadHandler.text : null);
         }
 
-        /// <summary>Update player progression level and cumulative score.</summary>
-        public IEnumerator UpdatePlayerProgression(int playerId, int level, int score,
-            Action<bool> onComplete)
+        /// <summary>Update player progression level.</summary>
+        public IEnumerator UpdatePlayerProgression(int playerId, int level, Action<bool> onComplete)
         {
             if (!IsConfigured) { onComplete?.Invoke(false); yield break; }
 
-            string json = $"{{\"progression_level\":{level},\"total_score\":{score}}}";
+            string json = $"{{\"progression_level\":{level}}}";
             var    req  = BuildRequest($"players?id=eq.{playerId}", "PATCH", json);
 
             yield return req.SendWebRequest();
@@ -368,32 +367,7 @@ namespace Persistence
             onComplete?.Invoke(LogResult(req, $"SaveActiveUnits(save={saveId})"));
         }
 
-        // ── City Reputation Operations ───────────────────────────────────
 
-        /// <summary>Upsert a city reputation record.</summary>
-        public IEnumerator UpsertCityReputation(int playerId, string cityName, int reputation,
-            Action<bool> onComplete)
-        {
-            if (!IsConfigured) { onComplete?.Invoke(false); yield break; }
-
-            string json = $"{{\"player_id\":{playerId},\"city_name\":\"{EscapeJson(cityName)}\",\"reputation\":{reputation}}}";
-            var    req  = BuildRequest("city_reputations?on_conflict=player_id,city_name", "POST", json);
-            req.SetRequestHeader("Prefer", "resolution=merge-duplicates,return=representation");
-
-            yield return req.SendWebRequest();
-            onComplete?.Invoke(LogResult(req, $"UpsertCityReputation({cityName})"));
-        }
-
-        /// <summary>Load all city reputations for a player.</summary>
-        public IEnumerator LoadCityReputations(int playerId, Action<string> onComplete)
-        {
-            if (!IsConfigured) { onComplete?.Invoke(null); yield break; }
-
-            var req = BuildRequest($"city_reputations?player_id=eq.{playerId}", "GET");
-            yield return req.SendWebRequest();
-            onComplete?.Invoke(LogResult(req, $"LoadCityReputations(player={playerId})")
-                ? req.downloadHandler.text : null);
-        }
 
         // ── Unlock Operations ────────────────────────────────────────────
 
@@ -427,11 +401,9 @@ namespace Persistence
         public class GameStatsPayload
         {
             public int    player_id;
-            public int    session_score;
             public int    fires_extinguished;
             public int    cities_saved;
             public int    cities_lost;
-            public int    total_xp_earned;
             public int    ticks_survived;
             public int    final_level;
             public string highest_threat_handled;
@@ -452,7 +424,7 @@ namespace Persistence
 
             yield return req.SendWebRequest();
             onComplete?.Invoke(LogResult(req,
-                $"SaveGameStats(player={stats.player_id}, score={stats.session_score})"));
+                $"SaveGameStats(player={stats.player_id})"));
         }
 
         /// <summary>Load all game stats for a player, newest first.</summary>
@@ -468,7 +440,7 @@ namespace Persistence
 
         // ── Leaderboard ──────────────────────────────────────────────────
 
-        /// <summary>Top N players by total_score (uses view, falls back to table).</summary>
+        /// <summary>Top N players by progression_level (uses view, falls back to table).</summary>
         public IEnumerator LoadLeaderboard(int limit, Action<string> onComplete)
         {
             if (!IsConfigured) { onComplete?.Invoke(null); yield break; }
@@ -484,7 +456,7 @@ namespace Persistence
             else
             {
                 Debug.LogWarning("[DB] Leaderboard view unavailable, using fallback.");
-                var fallback = BuildRequest($"players?order=total_score.desc&limit={limit}", "GET");
+                var fallback = BuildRequest($"players?order=progression_level.desc&limit={limit}", "GET");
                 yield return fallback.SendWebRequest();
                 onComplete?.Invoke(LogResult(fallback, "LoadLeaderboard(fallback)")
                     ? fallback.downloadHandler.text : null);

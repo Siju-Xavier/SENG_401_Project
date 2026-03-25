@@ -9,36 +9,7 @@ namespace BusinessLogic {
         [SerializeField] private PlayerProgression progressionData;
         [SerializeField] private int playerId = 1;
 
-        /// <summary>Add points to the player's score and sync to cloud.</summary>
-        public void AddToScore(int points) {
-            if (progressionData == null) return;
-            progressionData.CurrentScore += points;
-            Debug.Log($"[Progression] Score: {progressionData.CurrentScore}");
-
-            // Sync to cloud
-            StartCoroutine(SyncProgressionToCloud());
-        }
-
-        /// <summary>Check if the player qualifies for a level-up.</summary>
-        public void CheckScore() {
-            if (progressionData == null) return;
-            int threshold = progressionData.CurrentLevel * 100;
-
-            if (progressionData.CurrentScore >= threshold) {
-                progressionData.CurrentLevel++;
-                Debug.Log($"[Progression] Level up! Now level {progressionData.CurrentLevel}");
-                EventBroker.Instance.Publish(Core.EventType.LevelUp, progressionData.CurrentLevel);
-
-                // Unlock a feature at every level
-                string unlock = $"Level{progressionData.CurrentLevel}Reward";
-                if (!progressionData.UnlockedFeatures.Contains(unlock)) {
-                    progressionData.UnlockedFeatures.Add(unlock);
-                    StartCoroutine(PersistUnlock(unlock));
-                }
-
-                StartCoroutine(SyncProgressionToCloud());
-            }
-        }
+        // Score checking methods removed. Levels are now managed simply by ForceLevelUp() at the end of each survived round.
 
         /// <summary>Force a level up regardless of score (e.g. at the end of a round with no cities burned).</summary>
         public void ForceLevelUp() {
@@ -59,33 +30,53 @@ namespace BusinessLogic {
 
         public int CurrentLevel => progressionData != null ? progressionData.CurrentLevel : 1;
 
-        public int GetCurrentScore() {
-            return progressionData != null ? progressionData.CurrentScore : 0;
-        }
-
         public bool CalculateProgressionLevel(string topic) {
-            CheckScore();
             return progressionData != null && progressionData.CurrentLevel > 1;
         }
 
-        // ── Global Difficulty Multipliers ──────────────────────────────
+        // ── Rate-Based Difficulty Scaling ─────────────────────────────
         
+        [Header("Fire Difficulty Rates")]
+        [Tooltip("Ignition rate at Level 1 (fires per second).")]
+        [SerializeField] private float minIgnitionRate = 0.1f;
+        [Tooltip("Ignition rate at reference level (fires per second).")]
+        [SerializeField] private float maxIgnitionRate = 2.0f;
+        [Tooltip("Spread rate at Level 1 (spreads per second per burning tile).")]
+        [SerializeField] private float minSpreadRate = 0.1f;
+        [Tooltip("Spread rate at reference level (spreads per second per burning tile).")]
+        [SerializeField] private float maxSpreadRate = 1.0f;
+        [Tooltip("Level at which max rates are reached. Growth continues linearly beyond.")]
+        [SerializeField] private int referenceLevel = 100;
+
+        [Header("Land Recovery")]
+        [Tooltip("Fraction of burnt edge tiles that recover naturally at the end of a round (e.g., 0.25 = 25%).")]
+        [SerializeField] private float baseRecoveryFraction = 0.25f;
+
         /// <summary>
-        /// Global multiplier for fire spread chance.
-        /// Level 1 = 1.0x, Level 2 = 1.1x, Level 3 = 1.2x...
+        /// Ignition rate (fires/sec) for the current level.
+        /// Linear scaling: Level 1 = minIgnitionRate, referenceLevel = maxIgnitionRate.
+        /// Continues growing linearly beyond referenceLevel.
         /// </summary>
-        public float GetGlobalSpreadMultiplier() {
+        public float GetIgnitionRate() {
             int level = CurrentLevel;
-            return 1.0f + (level - 1) * 0.1f;
+            return minIgnitionRate + (maxIgnitionRate - minIgnitionRate) * (level - 1) / (float)(referenceLevel - 1);
         }
 
         /// <summary>
-        /// Global multiplier for random fire spawn chance.
-        /// Level 1 = 1.0x, Level 2 = 1.2x, Level 3 = 1.4x...
+        /// Base spread rate (spreads/sec per burning tile) for the current level.
+        /// Linear scaling: Level 1 = minSpreadRate, referenceLevel = maxSpreadRate.
+        /// Continues growing linearly beyond referenceLevel.
         /// </summary>
-        public float GetGlobalSpawnMultiplier() {
+        public float GetSpreadRate() {
             int level = CurrentLevel;
-            return 1.0f + (level - 1) * 0.2f;
+            return minSpreadRate + (maxSpreadRate - minSpreadRate) * (level - 1) / (float)(referenceLevel - 1);
+        }
+
+        /// <summary>
+        /// Gets the fraction of land that recovers at the end of a round.
+        /// </summary>
+        public float GetRecoveryRate() {
+            return baseRecoveryFraction;
         }
 
         // ── Cloud sync helpers ─────────────────────────────────────────
@@ -96,7 +87,6 @@ namespace BusinessLogic {
 
             yield return db.UpdatePlayerProgression(playerId,
                 progressionData.CurrentLevel,
-                progressionData.CurrentScore,
                 ok => {
                     if (ok) Debug.Log("[Progression] Synced to cloud.");
                 });

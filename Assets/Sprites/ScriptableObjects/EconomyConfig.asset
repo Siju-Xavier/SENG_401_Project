@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7f28db2674b7c14390bab5add4af19d, type: 3}
   m_Name: EconomyConfig
   m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.EconomyConfig
-  baseIncomePerRound: 500
-  incomeIncreasePerLevel: 50
-  baseDeploymentCost: 100
-  costIncreasePerLevel: 10
-  initialCityBudget: 1000
+  baseIncomePerSecond: 1
+  incomeIncreasePerSecondPerLevel: 0.2
+  rewardPerUnburntTile: 1
+  baseDeploymentCost: 10
+  costIncreasePerLevel: 2
+  initialCityBudget: 100

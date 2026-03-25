@@ -57,7 +57,6 @@ namespace Persistence
 
             // PlayerProgression
             public int progressionLevel;
-            public int totalXP;
 
             // Global resources
             public int budget;
@@ -92,7 +91,6 @@ namespace Persistence
             public string cityName;
             public int population;
             public float health;
-            public int reputation;
             public int budget;
             public int firefighters;
             public int equipment;

@@ -1,5 +1,5 @@
 // ============================================================================
-// FireEngine.cs — Tick-based fire simulation
+// FireEngine.cs — Rate-based continuous fire simulation
 // ============================================================================
 // Per the UML:
 //   FireEngine ..> WeatherSystem : reads_wind_&_season
@@ -7,8 +7,8 @@
 //   FireEngine ..> Tile          : reads & modifies
 //   Tile       ..> BiomeConfig   : reads (spreadMultiplier, baseMoisture)
 //
-// Each tick: grow existing fires, then attempt to spread to neighbours.
-// Spread probability is affected by wind direction, biome, and moisture.
+// Fire ignition and spread use rate-based accumulators (fires/sec, spreads/sec)
+// driven by ProgressionManager level scaling.
 // ============================================================================
 
 namespace BusinessLogic {
@@ -39,45 +39,34 @@ namespace BusinessLogic {
             gridSystem = grid;
         }
 
-        [Header("Timing")]
-        [Tooltip("Seconds between fire simulation ticks.")]
-        [SerializeField] private float tickInterval = 1.5f;
-
-        [Header("Fire Behaviour")]
-        [Tooltip("Base probability (0-1) that fire spreads to a cardinal neighbour per tick.")]
-        [SerializeField] private float baseSpreadChance = 0.15f;
-
-        [Tooltip("How much wind direction boosts spread (0 = none, 1 = double).")]
+        [Header("Fire Tuning")]
+        [Tooltip("How much wind direction boosts spread rate (0 = none, 1 = double).")]
         [SerializeField] private float windInfluence = 0.6f;
 
-        [Tooltip("Intensity gained per tick by a burning tile.")]
-        [SerializeField] private float intensityGrowthRate = 0.15f;
+        [Tooltip("Intensity gained per second by a burning tile.")]
+        [SerializeField] private float burnIntensityPerSecond = 0.1f;
 
-        [Tooltip("Maximum fire intensity a tile can reach.")]
-        [SerializeField] private float maxIntensity = 5f;
+        [Tooltip("Maximum fire intensity a tile can reach (burns out at this level).")]
+        [SerializeField] private float burnoutThreshold = 5f;
 
-        [Tooltip("Moisture consumed per tick on a burning tile.")]
-        [SerializeField] private float moistureBurnRate = 0.08f;
+        [Tooltip("Moisture consumed per second on a burning tile.")]
+        [SerializeField] private float moistureDecayPerSecond = 0.05f;
 
-        [Header("Auto-Ignition")]
+        [Header("Initial Fires")]
         [Tooltip("Number of random fires to ignite on game start.")]
         [SerializeField] private int initialFireCount = 3;
 
         // ── Runtime state ────────────────────────────────────────────────
         private bool  isRunning;
-        private float fireTickTimer;
+        private float ignitionAccumulator;
 
         // Track all tiles that are currently on fire for efficient iteration
         private List<Tile> burningTiles = new List<Tile>();
 
-        // ── Public API (called by GameManager) ───────────────────────────
+        // Per-tile spread accumulators
+        private Dictionary<Tile, float> spreadAccumulators = new Dictionary<Tile, float>();
 
-        public void SetDifficulty(float spreadChance, float interval, int fireCount, float growthRate) {
-            baseSpreadChance = spreadChance;
-            tickInterval = interval;
-            initialFireCount = fireCount;
-            intensityGrowthRate = growthRate;
-        }
+        // ── Public API (called by GameManager) ───────────────────────────
 
         /// <summary>Start / resume the fire simulation loop.</summary>
         public void Resume() {
@@ -99,189 +88,188 @@ namespace BusinessLogic {
         private void Update() {
             if (!isRunning || gridSystem == null) return;
 
-            fireTickTimer += Time.deltaTime;
-            if (fireTickTimer >= tickInterval) {
-                fireTickTimer = 0f;
-                Tick();
-            }
+            float dt = Time.deltaTime;
+
+            // ── Auto-ignition (rate-based) ──
+            UpdateIgnition(dt);
+
+            // ── Process burning tiles ──
+            UpdateBurningTiles(dt);
         }
 
-        // ── Core Simulation ──────────────────────────────────────────────
+        // ── Rate-Based Ignition ──────────────────────────────────────────
 
-        /// <summary>
-        /// Advance fire simulation by one step.
-        /// 1. Grow intensity of burning tiles.
-        /// 2. Attempt to spread fire to neighbours.
-        /// </summary>
-        public void Tick() {
-            if (gridSystem == null) return;
-
-            // Random fire spawns based on level/policy
-            AutoIgniteTick();
-
-            // Work on a snapshot so new ignitions don't affect this tick
-            var snapshot = new List<Tile>(burningTiles);
-
-            var burnedOut = new List<Tile>();
-
-            foreach (var tile in snapshot) {
-                if (!tile.IsOnFire) continue;
-
-                // ── Grow intensity ──
-                tile.FireIntensity = Mathf.Min(tile.FireIntensity + intensityGrowthRate, maxIntensity);
-
-                // ── Burn moisture ──
-                tile.MoistureLevel = Mathf.Max(tile.MoistureLevel - moistureBurnRate, 0f);
-
-                // ── Attempt spread ──
-                CalculateSpread(tile);
-
-                // ── Burn out: tile reaches max intensity and is destroyed ──
-                if (tile.FireIntensity >= maxIntensity) {
-                    burnedOut.Add(tile);
-                    tile.IsBurnt = true; // Mark tile as permanently burnt out
-                }
-            }
-
-            // Burn out tiles that reached max intensity
-            foreach (var tile in burnedOut) {
-                tile.IsOnFire = false;
-                tile.FireIntensity = 0f;
-                burningTiles.Remove(tile);
-                EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
-            }
-
-            // Check for tiles that are no longer edges
-            foreach (var tile in snapshot) {
-                if (tile.IsOnFire && !IsEdgeTile(tile)) {
-                    // It's still on fire under the hood, but visually we want the animation to stop
-                    EventBroker.Instance.Publish(Core.EventType.FireNoLongerEdge, tile);
-                }
-            }
-
-            // Remove tiles that somehow got extinguished mid-tick
-            burningTiles.RemoveAll(t => !t.IsOnFire);
-        }
-
-        /// <summary>Attempt to spawn random fires based on level and policy modifiers.</summary>
-        private void AutoIgniteTick() {
-            if (gridSystem == null) return;
-            
+        /// <summary>Accumulate ignition rate and spawn fires when accumulator >= 1.</summary>
+        private void UpdateIgnition(float dt) {
             int currentLevel = progressionManager != null ? progressionManager.CurrentLevel : 1;
 
-            // Only start auto-igniting on level 2 and above, or make it extremely rare on level 1
-            if (currentLevel == 1) return;
+            // No auto-ignition on level 1 (only initial fires from StartRandomFires)
+            if (currentLevel <= 1) return;
 
-            // Base spawn chance per tick
-            float baseSpawnChance = 0.05f; 
-            
-            // Global level multiplier
-            float levelMultiplier = progressionManager != null ? progressionManager.GetGlobalSpawnMultiplier() : 1.0f;
+            float ignitionRate = progressionManager != null ? progressionManager.GetIgnitionRate() : 0.1f;
 
-            // Pick a random tile to potentially ignite
-            int rx = Random.Range(0, gridSystem.Width);
-            int ry = Random.Range(0, gridSystem.Height);
-            Tile tile = gridSystem.GetTileAt(rx, ry);
+            ignitionAccumulator += ignitionRate * dt;
 
-            if (tile == null || tile.IsOnFire || tile.IsBurnt || tile.Biome == null || tile.Biome.SpreadMultiplier <= 0f) return;
+            int maxAttempts = 10; // Prevent infinite loop if no valid tiles
+            while (ignitionAccumulator >= 1f && maxAttempts > 0) {
+                ignitionAccumulator -= 1f;
+                maxAttempts--;
 
-            // Local policy modifier
-            float policyModifier = PolicyManager.Instance != null ? PolicyManager.Instance.GetSpawnModifierForRegion(tile.Region) : 1.0f;
+                // Pick a random tile to ignite
+                int rx = Random.Range(0, gridSystem.Width);
+                int ry = Random.Range(0, gridSystem.Height);
+                Tile tile = gridSystem.GetTileAt(rx, ry);
 
-            float finalChance = baseSpawnChance * levelMultiplier * policyModifier;
-            if (Random.value < finalChance) {
-                Debug.Log($"[FireEngine] Auto-ignited ({tile.X},{tile.Y}) via AutoIgniteTick.");
+                if (tile == null || tile.IsOnFire || tile.IsBurnt
+                    || tile.Biome == null || tile.Biome.SpreadMultiplier <= 0f) continue;
+
+                // Policy modifier can reduce ignition in protected regions
+                float policyMod = PolicyManager.Instance != null
+                    ? PolicyManager.Instance.GetSpawnModifierForRegion(tile.Region) : 1.0f;
+
+                // Use policy as a probability gate (e.g. fire ban = 0.5 means 50% chance to skip)
+                if (policyMod < 1.0f && Random.value > policyMod) continue;
+
+                Debug.Log($"[FireEngine] Auto-ignited ({tile.X},{tile.Y}) rate={ignitionRate:F2}/s");
                 IgniteTile(tile);
             }
+
+            // Cap accumulator to prevent burst after pause
+            ignitionAccumulator = Mathf.Min(ignitionAccumulator, 2f);
         }
 
-        /// <summary>
-        /// For each cardinal neighbour of a burning tile, calculate whether
-        /// the fire spreads. Takes into account:
-        ///   - BiomeConfig.SpreadMultiplier
-        ///   - Tile moisture (higher moisture = lower chance)
-        ///   - Wind direction from WeatherSystem (fire spreads faster downwind)
-        /// </summary>
-        public void CalculateSpread(Tile sourceTile) {
-            if (gridSystem == null) return;
+        // ── Rate-Based Burning / Spread ──────────────────────────────────
 
-            var neighbours = gridSystem.GetNeighbours(sourceTile);
+        /// <summary>Update intensity, moisture, spread, and burnout for all burning tiles.</summary>
+        private void UpdateBurningTiles(float dt) {
+            var snapshot = new List<Tile>(burningTiles);
+            var burnedOut = new List<Tile>();
+
+            float baseSpreadRate = progressionManager != null ? progressionManager.GetSpreadRate() : 0.1f;
+
             Vector2 windDir = weatherSystem != null
                 ? weatherSystem.GetNextWindDirection().normalized
                 : Vector2.zero;
 
-            foreach (var neighbour in neighbours) {
-                // Skip tiles already on fire or burnt out
-                if (neighbour.IsOnFire || neighbour.IsBurnt) continue;
+            foreach (var tile in snapshot) {
+                if (!tile.IsOnFire) continue;
 
-                // Skip tiles with no biome (outside playable map) or water (SpreadMultiplier <= 0)
-                if (neighbour.Biome == null) continue;
-                if (neighbour.Biome.SpreadMultiplier <= 0f) continue;
+                // ── Grow intensity (per second) ──
+                tile.FireIntensity = Mathf.Min(tile.FireIntensity + burnIntensityPerSecond * dt, burnoutThreshold);
 
-                // ── Biome modifier ──
-                float biomeMultiplier = neighbour.Biome.SpreadMultiplier;
+                // ── Burn moisture (per second) ──
+                tile.MoistureLevel = Mathf.Max(tile.MoistureLevel - moistureDecayPerSecond * dt, 0f);
 
-                // ── Wind bonus ──
-                // Dot product of wind direction and source→neighbour direction
-                Vector2 spreadDir = new Vector2(
-                    neighbour.X - sourceTile.X,
-                    neighbour.Y - sourceTile.Y
-                ).normalized;
+                // ── Rate-based spread ──
+                UpdateSpread(tile, baseSpreadRate, windDir, dt);
 
-                float windDot  = Vector2.Dot(windDir, spreadDir);   // -1 to +1
-                float windBonus = 1f + windDot * windInfluence;     // 0.4 to 1.6
-
-                // ── Moisture penalty ──
-                float moisturePenalty = neighbour.MoistureLevel;    // 0 to 1
-
-                // ── Intensity boost — more intense fires spread easier ──
-                float intensityBoost = sourceTile.FireIntensity / maxIntensity; // 0 to 1
-
-                // ── Final probability ──
-                float levelMultiplier = progressionManager != null ? progressionManager.GetGlobalSpreadMultiplier() : 1.0f;
-                float policyModifier = PolicyManager.Instance != null ? PolicyManager.Instance.GetSpreadModifierForRegion(neighbour.Region) : 1.0f;
-
-                float probability = baseSpreadChance
-                    * biomeMultiplier
-                    * windBonus
-                    * levelMultiplier
-                    * policyModifier
-                    * (1f + intensityBoost)
-                    * (1f - moisturePenalty * 0.7f);
-
-                probability = Mathf.Clamp01(probability);
-
-                if (Random.value < probability) {
-                    IgniteTile(neighbour);
+                // ── Burn out: tile reaches max intensity ──
+                if (tile.FireIntensity >= burnoutThreshold) {
+                    burnedOut.Add(tile);
+                    tile.IsBurnt = true;
                 }
             }
+
+            // Process burned out tiles
+            foreach (var tile in burnedOut) {
+                tile.IsOnFire = false;
+                tile.FireIntensity = 0f;
+                burningTiles.Remove(tile);
+                spreadAccumulators.Remove(tile);
+                EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
+            }
+
+            // Clean up tiles extinguished by firefighters mid-frame
+            burningTiles.RemoveAll(t => !t.IsOnFire);
         }
 
-        /// <summary>Check if a tile has any non-burning flammable neighbors.</summary>
-        private bool IsEdgeTile(Tile tile) {
-            if (gridSystem == null) return true; // Default to true if no grid
-            
-            var neighbours = gridSystem.GetNeighbours(tile);
-            foreach (var neighbour in neighbours) {
-                // If there's a neighbour that is NOT on fire, BUT is flammable, we are still an edge
-                if (!neighbour.IsOnFire && neighbour.Biome != null && neighbour.Biome.SpreadMultiplier > 0f) {
-                    return true;
+        /// <summary>
+        /// Rate-based spread: accumulate spread rate per burning tile.
+        /// When accumulator >= 1, attempt to spread to a random valid neighbour.
+        /// Rate is affected by biome, wind, moisture, intensity, and policy.
+        /// </summary>
+        private void UpdateSpread(Tile sourceTile, float baseRate, Vector2 windDir, float dt) {
+            if (gridSystem == null) return;
+
+            // Get or create accumulator for this tile
+            if (!spreadAccumulators.ContainsKey(sourceTile))
+                spreadAccumulators[sourceTile] = 0f;
+
+            // Intensity boost — more intense fires spread faster
+            float intensityBoost = sourceTile.FireIntensity / burnoutThreshold; // 0 to 1
+
+            // Policy modifier for spreading from this tile's region
+            float policyMod = PolicyManager.Instance != null
+                ? PolicyManager.Instance.GetSpreadModifierForRegion(sourceTile.Region) : 1.0f;
+
+            // Accumulate spread rate
+            float effectiveRate = baseRate * (1f + intensityBoost) * policyMod;
+            spreadAccumulators[sourceTile] += effectiveRate * dt;
+
+            // Cap to prevent burst
+            spreadAccumulators[sourceTile] = Mathf.Min(spreadAccumulators[sourceTile], 3f);
+
+            // Attempt spreads
+            while (spreadAccumulators[sourceTile] >= 1f) {
+                spreadAccumulators[sourceTile] -= 1f;
+
+                var neighbours = gridSystem.GetNeighbours(sourceTile);
+                // Build list of valid spread targets
+                var validTargets = new List<Tile>();
+                var targetWeights = new List<float>();
+
+                foreach (var neighbour in neighbours) {
+                    if (neighbour.IsOnFire || neighbour.IsBurnt) continue;
+                    if (neighbour.Biome == null || neighbour.Biome.SpreadMultiplier <= 0f) continue;
+
+                    // Wind bonus for this direction
+                    Vector2 spreadDir = new Vector2(
+                        neighbour.X - sourceTile.X,
+                        neighbour.Y - sourceTile.Y
+                    ).normalized;
+                    float windDot = Vector2.Dot(windDir, spreadDir);
+                    float windBonus = 1f + windDot * windInfluence;
+
+                    // Moisture penalty
+                    float moistureFactor = 1f - neighbour.MoistureLevel * 0.7f;
+
+                    // Biome multiplier
+                    float weight = neighbour.Biome.SpreadMultiplier * windBonus * moistureFactor;
+                    if (weight > 0f) {
+                        validTargets.Add(neighbour);
+                        targetWeights.Add(weight);
+                    }
+                }
+
+                if (validTargets.Count == 0) break;
+
+                // Weighted random selection — fire prefers downwind, dry, flammable neighbours
+                float totalWeight = 0f;
+                foreach (var w in targetWeights) totalWeight += w;
+
+                float roll = Random.value * totalWeight;
+                float cumulative = 0f;
+                for (int i = 0; i < validTargets.Count; i++) {
+                    cumulative += targetWeights[i];
+                    if (roll <= cumulative) {
+                        IgniteTile(validTargets[i]);
+                        break;
+                    }
                 }
             }
-            return false;
         }
 
         // ── Ignition / Extinguish ────────────────────────────────────────
 
         /// <summary>Set a tile on fire and publish events.</summary>
         public void IgniteTile(Tile tile) {
-            if (tile == null || tile.IsOnFire) return;
+            if (tile == null || tile.IsOnFire || tile.IsBurnt) return;
 
             // Don't ignite tiles with no biome or water biome
             if (tile.Biome == null || tile.Biome.SpreadMultiplier <= 0f) return;
 
             tile.IsOnFire      = true;
-            tile.FireIntensity = 1f;
+            tile.FireIntensity = 0.5f; // Starts at 0.5f and grows until 'burnoutThreshold' (5.0f defaults)
 
             if (!burningTiles.Contains(tile))
                 burningTiles.Add(tile);
@@ -295,7 +283,7 @@ namespace BusinessLogic {
 
         /// <summary>Extinguish a tile and publish events.</summary>
         public void ExtinguishTile(Tile tile) {
-            if (tile == null || !tile.IsOnFire) return;
+            if (tile == null || !tile.IsOnFire || tile.IsBurnt) return;
 
             tile.IsOnFire      = false;
             tile.FireIntensity = 0f;
@@ -303,6 +291,7 @@ namespace BusinessLogic {
             tile.MoistureLevel = Mathf.Min(tile.MoistureLevel + 0.3f, 1f);
 
             burningTiles.Remove(tile);
+            spreadAccumulators.Remove(tile);
 
             EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
             Debug.Log($"[FireEngine] Tile ({tile.X},{tile.Y}) extinguished.");
@@ -364,31 +353,54 @@ namespace BusinessLogic {
         public void ExtinguishAllFires() {
             var allBurning = new List<Tile>(burningTiles);
             foreach (var tile in allBurning) {
-                // Ensure actively burning tiles are marked permanently as burnt so they turn grey!
-                tile.IsBurnt = true; 
-                ExtinguishTile(tile);
+                // Mark as burnt and extinguish directly (bypass ExtinguishTile guard)
+                tile.IsBurnt = true;
+                tile.IsOnFire = false;
+                tile.FireIntensity = 0f;
+                burningTiles.Remove(tile);
+                EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
             }
         }
 
-        /// <summary>Randomly recovers a percentage (0.0 - 1.0) of burnt tiles, allowing them to burn again.</summary>
+        /// <summary>
+        /// Recovers burnt tiles at the edges of burn patches. Only burnt tiles
+        /// adjacent to at least one healthy (non-burnt) tile can recover,
+        /// creating a natural "healing inward" effect over multiple rounds.
+        /// </summary>
         public void RecoverBurntTiles(float recoveryFraction) {
             if (gridSystem == null) return;
             int recoveredCount = 0;
-            
+
+            // First pass: collect edge burnt tiles (adjacent to a healthy tile)
+            var edgeBurnt = new List<Tile>();
             for (int x = 0; x < gridSystem.Width; x++) {
                 for (int y = 0; y < gridSystem.Height; y++) {
                     Tile tile = gridSystem.GetTileAt(x, y);
-                    if (tile != null && tile.IsBurnt) {
-                        if (Random.value < recoveryFraction) {
-                            tile.IsBurnt = false;
-                            tile.MoistureLevel = tile.Biome != null ? tile.Biome.BaseMoisture : 1f;
-                            EventBroker.Instance.Publish(Core.EventType.TileRecovered, tile);
-                            recoveredCount++;
+                    if (tile == null || !tile.IsBurnt) continue;
+
+                    // Check if any neighbour is healthy (not burnt, not on fire, and flammable)
+                    var neighbours = gridSystem.GetNeighbours(tile);
+                    foreach (var neighbour in neighbours) {
+                        if (!neighbour.IsBurnt && !neighbour.IsOnFire
+                            && neighbour.Biome != null && neighbour.Biome.SpreadMultiplier > 0f) {
+                            edgeBurnt.Add(tile);
+                            break;
                         }
                     }
                 }
             }
-            Debug.Log($"[FireEngine] Recovered {recoveredCount} burnt tiles.");
+
+            // Second pass: randomly recover from the edge candidates
+            foreach (var tile in edgeBurnt) {
+                if (Random.value < recoveryFraction) {
+                    tile.IsBurnt = false;
+                    tile.MoistureLevel = tile.Biome != null ? tile.Biome.BaseMoisture : 1f;
+                    EventBroker.Instance.Publish(Core.EventType.TileRecovered, tile);
+                    recoveredCount++;
+                }
+            }
+
+            Debug.Log($"[FireEngine] Recovered {recoveredCount}/{edgeBurnt.Count} edge burnt tiles.");
         }
 
         // ── Queries ──────────────────────────────────────────────────────

@@ -85,7 +85,8 @@ namespace Presentation
 
             if (state == UnitState.Extinguishing && targetTile != null)
             {
-                if (!targetTile.IsOnFire)
+                // Stop extinguishing if tile is no longer on fire OR has become burnt
+                if (!targetTile.IsOnFire || targetTile.IsBurnt)
                 {
                     OnTileExtinguished();
                     return;
@@ -237,7 +238,8 @@ namespace Presentation
 
         private void OnArrivedAtTarget()
         {
-            if (targetTile != null && targetTile.IsOnFire)
+            // Only start extinguishing if the tile is actively burning and NOT already burnt
+            if (targetTile != null && targetTile.IsOnFire && !targetTile.IsBurnt)
             {
                 state = UnitState.Extinguishing;
             }

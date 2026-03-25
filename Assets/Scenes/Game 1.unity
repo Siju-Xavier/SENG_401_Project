@@ -2135,11 +2135,11 @@ MonoBehaviour:
     unlockedFeatures: []
   playerId: 1
   minIgnitionRate: 0.1
-  maxIgnitionRate: 2
+  maxIgnitionRate: 5
   minSpreadRate: 0.1
-  maxSpreadRate: 1
+  maxSpreadRate: 2
   referenceLevel: 100
-  baseRecoveryFraction: 0.25
+  baseRecoveryFraction: 0.3
 --- !u!1 &424066395
 GameObject:
   m_ObjectHideFlags: 0
@@ -3615,6 +3615,7 @@ MonoBehaviour:
   enableCityPlacement: 1
   numberOfCities: 3
   minCityDistance: 15
+  economyConfig: {fileID: 11400000, guid: 3bb44d8e363b6664b904a7350b780169, type: 2}
 --- !u!4 &604701781
 Transform:
   m_ObjectHideFlags: 0
@@ -4907,7 +4908,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3768d623efca4bf4fac079abe57f292c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.UIManager
-  budgetText: {fileID: 0}
   roundText: {fileID: 0}
   alertBanner: {fileID: 0}
   alertText: {fileID: 0}
@@ -5954,7 +5954,7 @@ MonoBehaviour:
   burnIntensityPerSecond: 0.1
   burnoutThreshold: 2
   moistureDecayPerSecond: 0.05
-  initialFireCount: 3
+  initialFireCount: 2
 --- !u!1 &1004617680
 GameObject:
   m_ObjectHideFlags: 0
@@ -7657,7 +7657,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3768d623efca4bf4fac079abe57f292c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.UIManager
-  budgetText: {fileID: 0}
   roundText: {fileID: 0}
   alertBanner: {fileID: 0}
   alertText: {fileID: 0}
@@ -7774,7 +7773,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a11c8cfe6c3cfd94da890daeaece5e92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.ReputationManager
-  playerId: 1
 --- !u!1 &1530069791
 GameObject:
   m_ObjectHideFlags: 0

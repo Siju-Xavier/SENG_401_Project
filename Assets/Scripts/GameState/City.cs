@@ -15,11 +15,11 @@ namespace GameState {
         public int TileX => tileX;
         public int TileY => tileY;
 
-        public City(string name, int x, int y) {
+        public City(string name, int x, int y, int initialBudget = 1000) {
             cityName = name;
             tileX = x;
             tileY = y;
-            budget = 1000;
+            budget = initialBudget;
         }
     }
 }

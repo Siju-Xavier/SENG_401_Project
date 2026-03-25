@@ -14,6 +14,9 @@ namespace BusinessLogic
         [Tooltip("Minimum distance between cities in tiles")]
         [SerializeField] private int minCityDistance = 15;
 
+        [Header("Economy Settings")]
+        [SerializeField] private ScriptableObjects.EconomyConfig economyConfig;
+
         public bool EnableCityPlacement => enableCityPlacement;
 
         public void GenerateCities(GridSystem grid, MapData mapData)
@@ -50,7 +53,8 @@ namespace BusinessLogic
 
                     string[] names = { "Banff", "Calgary", "Edmonton" };
                     string cityName = i < names.Length ? names[i] : $"City_{i + 1}";
-                    City city = new City(cityName, x, y);
+                    int initialBudget = economyConfig != null ? economyConfig.InitialCityBudget : 1000;
+                    City city = new City(cityName, x, y, initialBudget);
                     Region region = new Region(cityName, city);
                     grid.AddRegion(region);
                     cityPositions.Add(new Vector2Int(x, y));

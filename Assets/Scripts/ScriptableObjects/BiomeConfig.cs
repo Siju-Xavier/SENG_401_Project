@@ -12,6 +12,7 @@ namespace ScriptableObjects {
         [Header("Tilemap")]
         [SerializeField] private TileBase defaultTile;
         [SerializeField] private TileBase burningTile;
+        [SerializeField] private TileBase burntTile;
 
         [Header("Vegetation")]
         [Tooltip("Sprites to place on tiles of this biome (e.g., trees, shrubs)")]
@@ -40,6 +41,7 @@ namespace ScriptableObjects {
         public Sprite BurningSprite => burningSprite;
         public TileBase DefaultTile => defaultTile;
         public TileBase BurningTile => burningTile;
+        public TileBase BurntTile => burntTile;
         public Sprite[] VegetationSprites => vegetationSprites;
         public Sprite BurningVegetationSprite => burningVegetationSprite;
         public Sprite[] DecorationSprites => decorationSprites;

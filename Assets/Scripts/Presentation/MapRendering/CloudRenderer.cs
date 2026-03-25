@@ -64,6 +64,8 @@ namespace Presentation.MapRendering
         private int mapWidth;
         private int mapHeight;
         private bool initialized;
+        private int lastOpacityTiers;
+        private float lastMaxOpacity;
 
         private void Start()
         {
@@ -93,6 +95,10 @@ namespace Presentation.MapRendering
                 if (cloudTilemap != null) cloudTilemap.ClearAllTiles();
                 return;
             }
+
+            // Rebuild tier tiles if appearance settings changed at runtime
+            if (opacityTiers != lastOpacityTiers || !Mathf.Approximately(maxOpacity, lastMaxOpacity))
+                BuildTierTiles();
 
             // Drift the main layer (movement) and morph layer (shape change)
             currentOffset += windSpeed * Time.deltaTime;
@@ -142,6 +148,9 @@ namespace Presentation.MapRendering
             }
 
             Debug.Log($"[CloudRenderer] Building {opacityTiers} tiers, sprite: {sourceSprite.name}, maxOpacity: {maxOpacity}");
+
+            lastOpacityTiers = opacityTiers;
+            lastMaxOpacity = maxOpacity;
 
             for (int i = 0; i < opacityTiers; i++)
             {

@@ -13,13 +13,24 @@ namespace Presentation
         [Header("UI References")]
         [SerializeField] private GameObject panelRoot;
         [SerializeField] private TextMeshProUGUI cityNameText;
-        [SerializeField] private TextMeshProUGUI statsText;
+        
+        [Header("Legacy/Combined Text")]
+        [SerializeField] private TextMeshProUGUI statsText; // Keep for fallback
+        
+        [Header("Detailed Stats Text")]
+        [SerializeField] private TextMeshProUGUI budgetIncomeText;
+        [SerializeField] private TextMeshProUGUI ignitionRateText;
+        [SerializeField] private TextMeshProUGUI recoveryRateText;
+
+        [Header("Buttons")]
         [SerializeField] private Button sendFirefighterButton;
         [SerializeField] private Button policyButton;
         [SerializeField] private Button closeButton;
 
         private City currentCity;
         private ResourceManager resourceManager;
+        private ProgressionManager progressionManager;
+        private ScriptableObjects.EconomyConfig economyConfig;
 
         private void Awake()
         {
@@ -41,6 +52,19 @@ namespace Presentation
         private void Start()
         {
             resourceManager = FindFirstObjectByType<ResourceManager>();
+            progressionManager = FindFirstObjectByType<ProgressionManager>();
+#if UNITY_EDITOR
+            if (economyConfig == null) {
+                economyConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<ScriptableObjects.EconomyConfig>("Assets/Sprites/ScriptableObjects/EconomyConfig.asset");
+            }
+#endif
+        }
+
+        private void Update()
+        {
+            if (currentCity != null && panelRoot != null && panelRoot.activeSelf) {
+                UpdateStatsText();
+            }
         }
 
         public void ShowPanel(City city)
@@ -52,14 +76,61 @@ namespace Presentation
             if (cityNameText != null) cityNameText.text = city.CityName;
             else Debug.LogWarning("[CityPanelController] cityNameText is null!");
 
-            if (statsText != null) statsText.text = $"Budget: ${city.Budget}\nReputation: {city.Reputation}";
-            else Debug.LogWarning("[CityPanelController] statsText is null!");
+            UpdateStatsText();
 
             if (panelRoot != null) {
                 panelRoot.SetActive(true);
                 Debug.Log($"[CityPanelController] panelRoot set to active. Current parent: {panelRoot.transform.parent.name}");
             } else {
                 Debug.LogWarning("[CityPanelController] panelRoot is null! Cannot activate the panel.");
+            }
+        }
+
+        private void UpdateStatsText()
+        {
+            if (currentCity == null) return;
+
+            int currentLevel = progressionManager != null ? progressionManager.CurrentLevel : 1;
+            
+            // Income calculation
+            float baseIncomeRate = economyConfig != null ? economyConfig.BaseIncomePerSecond : 1f;
+            float increaseRate = economyConfig != null ? economyConfig.IncomeIncreasePerSecondPerLevel : 0.2f;
+            float incomePerSec = baseIncomeRate + (currentLevel - 1) * increaseRate;
+
+            // Stats
+            float ignitionRate = progressionManager != null ? progressionManager.GetIgnitionRate() : 0.1f;
+            float recoveryRate = progressionManager != null ? progressionManager.GetRecoveryRate() : 0.25f;
+
+            // Policy UI staging 
+            string ignitionPolicy = "";
+            string recoveryPolicy = "";
+
+            if (BusinessLogic.PolicyManager.Instance != null && BusinessLogic.PolicyManager.Instance.ForceShowUIModifiers) {
+                ignitionPolicy = " <color=green>-20%</color>"; // Staging for active policies
+                recoveryPolicy = " <color=green>+50%</color>"; // Staging for active policies
+            }
+
+            string budgetStr = $"Budget: ${currentCity.Budget}  <color=green>+${incomePerSec:F1} per sec</color>";
+            string ignitionStr = $"Fire Ignition Rate: {ignitionRate:F2} {ignitionPolicy}";
+            string recoveryStr = $"Land Recovery Rate: {recoveryRate:F2} {recoveryPolicy}";
+
+            // Populate individual fields if they exist
+            if (budgetIncomeText != null) budgetIncomeText.text = budgetStr;
+            if (ignitionRateText != null) ignitionRateText.text = ignitionStr;
+            if (recoveryRateText != null) recoveryRateText.text = recoveryStr;
+
+            // Fallback to giant text blob if detailed texts aren't assigned
+            if (budgetIncomeText == null && ignitionRateText == null && statsText != null) {
+                statsText.text = $"{budgetStr}\n{ignitionStr}\n{recoveryStr}";
+            }
+
+            // Update button text
+            if (sendFirefighterButton != null) {
+                int cost = resourceManager != null ? resourceManager.GetDeploymentCost(currentLevel) : 5;
+                var btnText = sendFirefighterButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (btnText != null) {
+                    btnText.text = $"Firefighter\nCost: ${cost}";
+                }
             }
         }
 

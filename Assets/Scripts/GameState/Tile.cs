@@ -14,6 +14,7 @@ namespace GameState {
 
         private Region region;
         private BiomeConfig biome;
+        private UnityEngine.GameObject assignedUnit;
 
         public int X => x;
         public int Y => y;
@@ -24,6 +25,9 @@ namespace GameState {
         public bool IsBurnt { get => isBurnt; set => isBurnt = value; }
         public Region Region { get => region; set => region = value; }
         public BiomeConfig Biome { get => biome; set => biome = value; }
+        public bool IsAssigned => assignedUnit != null;
+        public UnityEngine.GameObject AssignedUnit { get => assignedUnit; set => assignedUnit = value; }
+        public void ClearAssignment() { assignedUnit = null; }
 
         public Tile(int x, int y) {
             this.x = x;

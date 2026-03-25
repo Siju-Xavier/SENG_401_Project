@@ -17,22 +17,13 @@ MonoBehaviour:
   moveSpeed: 5
   extinguishRate: 0.5
   unitPrefab: {fileID: 2536402554241467947, guid: 775f4ac97ec55ca4eb14676588edf446, type: 3}
-  spriteBottomLeft: {fileID: 0}
-  spriteBottomRight: {fileID: 0}
-  walkSprites:
-  - {fileID: 5077917185552770260, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: -4195839554692395046, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 2399195435281955564, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: -842609007721476305, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: -3895655381535446103, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 8275661432118388582, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 1426735798881985202, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 2229549757149577549, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 5585577335429334352, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 634973651487567805, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: -9217533985934773387, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 2334255774963302733, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 5059282944790755524, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: -4974142296929780132, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: 1624321853575014909, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
-  - {fileID: -2006209938788831476, guid: 9dd3645b1e4b81547969160c3ba70b5e, type: 3}
+  standTopLeft: {fileID: -8047525202213863178, guid: fe9f694d6891f8b44a58ab83f88ee46d, type: 3}
+  standTopRight: {fileID: 7544868312529285259, guid: 1c639586e7434ae4bb9e2fba34014bfd, type: 3}
+  standBottomLeft: {fileID: 4882648281671561556, guid: 740bd7a553c7aee44b2defae14a6c407, type: 3}
+  standBottomRight: {fileID: -7312586129940635985, guid: 9ee8916607ea1134b83beeedccf933b2, type: 3}
+  maxTargets: 3
+  searchRadius: 10
+  runTopLeft: {fileID: 1196484379175984568, guid: ca7b291ec9ea05e4b9111154899d5444, type: 3}
+  runTopRight: {fileID: -7844367800473507557, guid: aab2412082dadd44eb27417b5c698e9c, type: 3}
+  runBottomLeft: {fileID: 2377480267933241857, guid: 0b562bef42cf57b4abd600b153eb6754, type: 3}
+  runBottomRight: {fileID: -3543927320679423695, guid: 324ae97cb2ccb9540982406ce86a183f, type: 3}

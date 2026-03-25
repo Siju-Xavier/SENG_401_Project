@@ -8,6 +8,10 @@ namespace BusinessLogic {
     public class PolicyManager : MonoBehaviour {
         [SerializeField] private PlayerProgression progression;
         
+        [Header("Debug")]
+        [Tooltip("Check this to visualize policy UI modifiers in the City Panel even when no policies are active.")]
+        public bool ForceShowUIModifiers = false;
+        
         // Track active policies per Region
         private Dictionary<Region, List<PolicyConfig>> activePolicies = new Dictionary<Region, List<PolicyConfig>>();
 

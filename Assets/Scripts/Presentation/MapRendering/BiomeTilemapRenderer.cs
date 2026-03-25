@@ -39,24 +39,24 @@ namespace Presentation.MapGeneration
 
         // ── Event Handlers ───────────────────────────────────────────────
 
-        private void OnFireStarted(object data)  => SwapToBurning(data as GameState.Tile);
-        private void OnFireSpread(object data)   => SwapToBurning(data as GameState.Tile);
+        // Fire start/spread: do NOT swap ground tile — the fire VFX overlay
+        // (TileRenderer) provides the visual. Ground tile stays as default
+        // so the tile doesn't look "burnt" while fire is still burning.
+        private void OnFireStarted(object data)  { /* no ground tile swap */ }
+        private void OnFireSpread(object data)   { /* no ground tile swap */ }
+
         private void OnFireExtinguished(object data) {
             var tile = data as GameState.Tile;
             if (tile == null) return;
             if (tile.IsBurnt) {
+                // Only show burnt ground when fire reached max intensity
                 SetTileBurnt(tile.X, tile.Y);
-            } else {
-                SetTileDefault(tile.X, tile.Y);
             }
+            // If fire was extinguished by firefighters (not burnt), tile
+            // already has its default ground tile — nothing to do.
         }
 
         private void OnTileRecovered(object data) => SwapToDefault(data as GameState.Tile);
-
-        private void SwapToBurning(GameState.Tile tile) {
-            if (tile == null) return;
-            SetTileBurning(tile.X, tile.Y);
-        }
 
         private void SwapToDefault(GameState.Tile tile) {
             if (tile == null) return;
@@ -143,12 +143,21 @@ namespace Presentation.MapGeneration
         public void SetTileBurnt(int x, int y)
         {
             BiomeConfig biome = GetBiomeAt(x, y);
-            if (biome != null && biome.DefaultTile != null)
+            if (biome == null) return;
+
+            var pos = new Vector3Int(x, y, 0);
+            groundTilemap.SetTileFlags(pos, TileFlags.None);
+
+            if (biome.BurntTile != null)
             {
-                var pos = new Vector3Int(x, y, 0);
+                // Use the dedicated burnt tile asset
+                groundTilemap.SetTile(pos, biome.BurntTile);
+                groundTilemap.SetColor(pos, Color.white);
+            }
+            else if (biome.DefaultTile != null)
+            {
+                // Fallback: tint default tile dark grey
                 groundTilemap.SetTile(pos, biome.DefaultTile);
-                groundTilemap.SetTileFlags(pos, TileFlags.None);
-                // Tint to a dark grey indicating burnt state
                 groundTilemap.SetColor(pos, new Color(0.25f, 0.25f, 0.25f, 1f));
             }
         }

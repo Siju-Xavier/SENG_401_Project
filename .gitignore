@@ -70,3 +70,5 @@ Desktop.ini
 .vscode/
 .mcp.json
 ProjectSettings/ProjectSettings.asset
+Packages/manifest.json
+Packages/packages-lock.json

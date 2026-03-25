@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/Game 1 Deebo.unity
+    guid: 8cab2cd039b02814585a0d71f7f0b570
+  - enabled: 1
     path: Assets/Scenes/Game 1-Siju.unity
     guid: 656fd8a5fb3ee89449e689f62062f06e
   - enabled: 1
@@ -16,7 +19,7 @@ EditorBuildSettings:
     guid: 0c91a9067357dc84dabe6d73ee4952a9
   - enabled: 1
     path: Assets/Scenes/Game Backup.unity
-    guid: 29f17ae2c1a451e4d86ab6fd0cb9a4ea
+    guid: 9a6e65dfeed7f744a9e0d72a05ca1b77
   - enabled: 1
     path: Assets/Scenes/Game OLD.unity
     guid: cde29ad54d7b1624eb44d811e3bc92da

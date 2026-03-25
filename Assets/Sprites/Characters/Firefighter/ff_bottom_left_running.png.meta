@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: c42454554043a1840bd3706ea06ef383
+guid: 0b562bef42cf57b4abd600b153eb6754
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1582695019494559636
-    second: firefighter_bottom_right_0
+      213: 2377480267933241857
+    second: ff_bottom_left_running_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +51,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 256
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: firefighter_bottom_right_0
+      name: ff_bottom_left_running_0
       rect:
         serializedVersion: 2
-        x: 47
-        y: 21
-        width: 128
-        height: 207
+        x: 24
+        y: 13
+        width: 89
+        height: 143
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 49fc0c81cbcd6f510800000000000000
-      internalID: 1582695019494559636
+      spriteID: 10259ae05b18ef020800000000000000
+      internalID: 2377480267933241857
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      firefighter_bottom_right_0: 1582695019494559636
+      ff_bottom_left_running_0: 2377480267933241857
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -392,7 +392,13 @@ namespace BusinessLogic {
 
             // Second pass: randomly recover from the edge candidates
             foreach (var tile in edgeBurnt) {
-                if (Random.value < recoveryFraction) {
+                // Apply policy recovery bonus for this tile's region
+                float effectiveRate = recoveryFraction;
+                if (PolicyManager.Instance != null)
+                    effectiveRate += PolicyManager.Instance.GetRecoveryBonusForRegion(tile.Region);
+                effectiveRate = Mathf.Clamp01(effectiveRate);
+
+                if (Random.value < effectiveRate) {
                     tile.IsBurnt = false;
                     tile.MoistureLevel = tile.Biome != null ? tile.Biome.BaseMoisture : 1f;
                     EventBroker.Instance.Publish(Core.EventType.TileRecovered, tile);

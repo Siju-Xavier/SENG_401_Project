@@ -217,7 +217,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.ComicButtonVisuals
   frontFace: {fileID: 1535268915}
-  pressOffset: {x: -5, y: -5}
+  pressOffset: {x: 5, y: -5}
 --- !u!114 &8573280
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1071,8 +1071,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -5, y: -5}
-  m_SizeDelta: {x: -0.00000023841858, y: 0}
+  m_AnchoredPosition: {x: -3.0000002, y: -3}
+  m_SizeDelta: {x: 0.00000023841858, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &137549880
 MonoBehaviour:
@@ -2164,7 +2164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.ComicButtonVisuals
   frontFace: {fileID: 228165615}
-  pressOffset: {x: -5, y: -5}
+  pressOffset: {x: 5, y: -5}
 --- !u!114 &281486432
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3163,7 +3163,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.ComicButtonVisuals
   frontFace: {fileID: 139800744}
-  pressOffset: {x: -5, y: -5}
+  pressOffset: {x: 5, y: -5}
 --- !u!114 &458460314
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3878,7 +3878,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.ComicButtonVisuals
   frontFace: {fileID: 650625154}
-  pressOffset: {x: -5, y: -5}
+  pressOffset: {x: 5, y: -5}
 --- !u!114 &540616899
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5713,7 +5713,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &755887502
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5801,7 +5801,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.ComicButtonVisuals
   frontFace: {fileID: 0}
-  pressOffset: {x: -5, y: -5}
+  pressOffset: {x: 5, y: -5}
 --- !u!222 &755887505
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -8569,7 +8569,6 @@ Transform:
   - {fileID: 513353964}
   - {fileID: 817380877}
   - {fileID: 1430331831}
-  - {fileID: 1639178605}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1234047033
@@ -10283,7 +10282,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.ComicButtonVisuals
   frontFace: {fileID: 542211005}
-  pressOffset: {x: -5, y: -5}
+  pressOffset: {x: 5, y: -5}
 --- !u!224 &1615598397
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10390,53 +10389,6 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_IsOn: 1
---- !u!1 &1639178604
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1639178605}
-  - component: {fileID: 1639178606}
-  m_Layer: 0
-  m_Name: PolicyManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1639178605
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1639178604}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1217230959}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1639178606
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1639178604}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 992b0cc431e185949b08593edb688549, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.PolicyManager
-  progression:
-    currentLevel: 1
-    unlockedFeatures: []
 --- !u!1 &1684709055
 GameObject:
   m_ObjectHideFlags: 0
@@ -13486,7 +13438,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Presentation.ComicButtonVisuals
   frontFace: {fileID: 1128735586}
-  pressOffset: {x: -5, y: -5}
+  pressOffset: {x: 5, y: -5}
 --- !u!114 &2138299108
 MonoBehaviour:
   m_ObjectHideFlags: 0

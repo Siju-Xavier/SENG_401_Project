@@ -28,7 +28,13 @@ namespace BusinessLogic {
             StartCoroutine(SyncProgressionToCloud());
         }
 
-        public int CurrentLevel => progressionData != null ? progressionData.CurrentLevel : 1;
+        public int CurrentLevel => progressionData != null ? Mathf.Max(1, progressionData.CurrentLevel) : 1;
+
+        private void Awake()
+        {
+            if (progressionData != null && progressionData.CurrentLevel < 1)
+                progressionData.CurrentLevel = 1;
+        }
 
         public bool CalculateProgressionLevel(string topic) {
             return progressionData != null && progressionData.CurrentLevel > 1;

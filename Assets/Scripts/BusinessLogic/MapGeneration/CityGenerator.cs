@@ -18,6 +18,7 @@ namespace BusinessLogic
         [SerializeField] private ScriptableObjects.EconomyConfig economyConfig;
 
         public bool EnableCityPlacement => enableCityPlacement;
+        public int NumberOfCities { get => numberOfCities; set => numberOfCities = value; }
 
         public void GenerateCities(GridSystem grid, MapData mapData)
         {

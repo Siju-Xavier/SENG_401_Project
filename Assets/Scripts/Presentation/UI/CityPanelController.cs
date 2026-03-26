@@ -27,6 +27,9 @@ namespace Presentation
         [SerializeField] private Button policyButton;
         [SerializeField] private Button closeButton;
 
+        [Header("Policy Panel")]
+        [SerializeField] private PolicyPanelController policyPanel;
+
         private City currentCity;
         private ResourceManager resourceManager;
         private ProgressionManager progressionManager;
@@ -101,13 +104,21 @@ namespace Presentation
             float ignitionRate = progressionManager != null ? progressionManager.GetIgnitionRate() : 0.1f;
             float recoveryRate = progressionManager != null ? progressionManager.GetRecoveryRate() : 0.25f;
 
-            // Policy UI staging 
+            // Policy effects display
             string ignitionPolicy = "";
             string recoveryPolicy = "";
 
-            if (BusinessLogic.PolicyManager.Instance != null && BusinessLogic.PolicyManager.Instance.ForceShowUIModifiers) {
-                ignitionPolicy = " <color=green>-20%</color>"; // Staging for active policies
-                recoveryPolicy = " <color=green>+50%</color>"; // Staging for active policies
+            if (BusinessLogic.PolicyManager.Instance != null) {
+                var region = FindRegionForCity(currentCity);
+                if (region != null) {
+                    float spawnMod = BusinessLogic.PolicyManager.Instance.GetSpawnModifierForRegion(region);
+                    if (spawnMod < 1f)
+                        ignitionPolicy = $" <color=green>-{(1f - spawnMod) * 100:F0}%</color>";
+
+                    float recoveryBonus = BusinessLogic.PolicyManager.Instance.GetRecoveryBonusForRegion(region);
+                    if (recoveryBonus > 0f)
+                        recoveryPolicy = $" <color=green>+{recoveryBonus * 100:F0}%</color>";
+                }
             }
 
             string budgetStr = $"Budget: ${currentCity.Budget}  <color=green>+${incomePerSec:F1} per sec</color>";
@@ -129,7 +140,7 @@ namespace Presentation
                 int cost = resourceManager != null ? resourceManager.GetDeploymentCost(currentLevel) : 5;
                 var btnText = sendFirefighterButton.GetComponentInChildren<TextMeshProUGUI>();
                 if (btnText != null) {
-                    btnText.text = $"Firefighter\nCost: ${cost}";
+                    btnText.text = $"Firefighter\n<size=12>Cost: ${cost}</size>";
                 }
             }
         }
@@ -144,6 +155,15 @@ namespace Presentation
             {
                 TerritoryRenderer.Instance.ClearBorders();
             }
+        }
+
+        private GameState.Region FindRegionForCity(City city)
+        {
+            var gridSystem = FindFirstObjectByType<GameState.GridSystem>();
+            if (gridSystem == null || city == null) return null;
+            foreach (var region in gridSystem.Regions)
+                if (region.City == city) return region;
+            return null;
         }
 
         private void OnSendFirefighterClicked()
@@ -164,7 +184,17 @@ namespace Presentation
         {
             if (currentCity == null) return;
             Debug.Log($"[CityPanel] Opening policy menu for {currentCity.CityName}");
-            // Future logic: Trigger policy UI or enact 'Fire Ban'
+            if (policyPanel != null)
+            {
+                if (panelRoot != null) panelRoot.SetActive(false);
+                policyPanel.Show(currentCity);
+            }
+        }
+
+        public void ShowFromPolicyBack()
+        {
+            if (currentCity != null && panelRoot != null)
+                panelRoot.SetActive(true);
         }
     }
 }

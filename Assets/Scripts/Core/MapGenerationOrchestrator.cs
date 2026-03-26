@@ -45,6 +45,17 @@ namespace Core
 
         private void Start()
         {
+            // Apply player-selected settings from the Start Panel (if not loading a save)
+            if (!Presentation.MainMenuManager.ShouldLoadSave && mapGenerator != null)
+            {
+                mapGenerator.mapWidth = Presentation.StartPanelController.SelectedMapWidth;
+                mapGenerator.mapHeight = Presentation.StartPanelController.SelectedMapHeight;
+                seed = Presentation.StartPanelController.SelectedSeed;
+
+                if (cityGenerator != null)
+                    cityGenerator.NumberOfCities = Presentation.StartPanelController.SelectedCityCount;
+            }
+
             GenerateWorld();
         }
 

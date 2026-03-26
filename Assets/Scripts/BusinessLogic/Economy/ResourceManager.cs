@@ -48,6 +48,9 @@ namespace BusinessLogic {
             }
 
             RecalculateGlobalBudget();
+
+            // Register Mutual Aid income modifier
+            RegisterIncomeModifier(new MutualAidModifier(managedCities));
         }
 
         public void SetGridSystem(GridSystem grid) {

@@ -4,7 +4,7 @@ namespace GameState {
 
     [System.Serializable]
     public class PlayerProgression {
-        [SerializeField] private int currentLevel;
+        [SerializeField] private int currentLevel = 1;
         [SerializeField] private List<string> unlockedFeatures = new List<string>();
 
         public int CurrentLevel  { get => currentLevel;  set => currentLevel = value; }

@@ -45,6 +45,9 @@ namespace Persistence
         private string _cachedData;
         private int _activePlayerId = 1;
 
+        [HideInInspector] public string AccessToken = "";
+        [HideInInspector] public string AuthUserId = "";
+
         /// <summary>Set the player ID for cloud operations.</summary>
         public void SetPlayerId(int id) => _activePlayerId = id;
 
@@ -114,9 +117,9 @@ namespace Persistence
 
         // ── Helper: Build Request ────────────────────────────────────────
 
-        private UnityWebRequest BuildRequest(string endpoint, string method, string json = null)
+        private UnityWebRequest BuildRequest(string endpoint, string method, string json = null, bool isAuth = false)
         {
-            string url = $"{supabaseUrl}/rest/v1/{endpoint}";
+            string url = $"{supabaseUrl}{(isAuth ? "/auth/v1/" : "/rest/v1/")}{endpoint}";
             var    req = new UnityWebRequest(url, method);
 
             if (!string.IsNullOrEmpty(json))
@@ -125,9 +128,9 @@ namespace Persistence
             req.downloadHandler = new DownloadHandlerBuffer();
 
             req.SetRequestHeader("apikey",        supabaseAnonKey);
-            req.SetRequestHeader("Authorization", $"Bearer {supabaseAnonKey}");
+            req.SetRequestHeader("Authorization", $"Bearer {(string.IsNullOrEmpty(AccessToken) ? supabaseAnonKey : AccessToken)}");
             req.SetRequestHeader("Content-Type",  "application/json");
-            req.SetRequestHeader("Prefer",        "return=representation");
+            if (!isAuth) req.SetRequestHeader("Prefer", "return=representation");
 
             return req;
         }
@@ -152,6 +155,53 @@ namespace Persistence
             var req = BuildRequest("players?limit=1", "GET");
             yield return req.SendWebRequest();
             onComplete?.Invoke(LogResult(req, "TestConnection"));
+        }
+
+        // ── Authentication ───────────────────────────────────────────────
+
+        public IEnumerator SignUpWithEmail(string email, string password, Action<bool, string> onComplete)
+        {
+            if (!IsConfigured) { onComplete?.Invoke(false, "Not configured"); yield break; }
+            string json = $"{{\"email\":\"{EscapeJson(email)}\",\"password\":\"{EscapeJson(password)}\"}}";
+            var req = BuildRequest("signup", "POST", json, true);
+            yield return req.SendWebRequest();
+            
+            bool ok = req.result == UnityWebRequest.Result.Success;
+            if (ok) ExtractAndSetToken(req.downloadHandler.text);
+            onComplete?.Invoke(ok, ok ? req.downloadHandler.text : req.error);
+        }
+
+        public IEnumerator LoginWithEmail(string email, string password, Action<bool, string> onComplete)
+        {
+            if (!IsConfigured) { onComplete?.Invoke(false, "Not configured"); yield break; }
+            string json = $"{{\"email\":\"{EscapeJson(email)}\",\"password\":\"{EscapeJson(password)}\"}}";
+            var req = BuildRequest("token?grant_type=password", "POST", json, true);
+            yield return req.SendWebRequest();
+
+            bool ok = req.result == UnityWebRequest.Result.Success;
+            if (ok) ExtractAndSetToken(req.downloadHandler.text);
+            onComplete?.Invoke(ok, ok ? req.downloadHandler.text : req.error);
+        }
+
+        private void ExtractAndSetToken(string json)
+        {
+            try {
+                int tokenIdx = json.IndexOf("\"access_token\":\"");
+                if (tokenIdx > 0) {
+                    int start = tokenIdx + 16;
+                    int end = json.IndexOf("\"", start);
+                    AccessToken = json.Substring(start, end - start);
+                }
+                int userIdx = json.IndexOf("\"user\":");
+                if (userIdx > 0) {
+                    int idIdx = json.IndexOf("\"id\":\"", userIdx);
+                    if (idIdx > 0) {
+                        int start = idIdx + 6;
+                        int end = json.IndexOf("\"", start);
+                        AuthUserId = json.Substring(start, end - start);
+                    }
+                }
+            } catch { }
         }
 
         // ── Player Operations ────────────────────────────────────────────

@@ -12,6 +12,7 @@ $$ LANGUAGE plpgsql;
 --1. PLAYERS 
 CREATE TABLE IF NOT EXISTS players (
     id                  SERIAL          PRIMARY KEY,
+    auth_id             UUID            UNIQUE,          -- Links to auth.users.id
     username            TEXT            NOT NULL UNIQUE,
     progression_level   INT             NOT NULL DEFAULT 1,
     total_score         INT             NOT NULL DEFAULT 0,
@@ -22,6 +23,22 @@ CREATE TABLE IF NOT EXISTS players (
 CREATE OR REPLACE TRIGGER players_updated_at
     BEFORE UPDATE ON players
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Automate Player Creation on Sign Up
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.players (auth_id, username)
+  VALUES (new.id, new.email);
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger the function every time a user is created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
     -- ── 2. GAME_SETTINGS ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS game_settings (

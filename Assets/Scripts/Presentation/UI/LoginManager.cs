@@ -83,9 +83,33 @@ namespace Presentation
                 return;
             }
 
-            // TODO: Call authentication service
-            Debug.Log($"[LoginManager] Login attempt: {email}");
-            ShowError("Login not yet implemented.");
+            var db = Persistence.DatabaseProvider.Instance;
+            if (db != null)
+            {
+                loginSubmitButton.interactable = false;
+                StartCoroutine(db.LoginWithEmail(email, password, (ok, response) =>
+                {
+                    loginSubmitButton.interactable = true;
+                    if (ok)
+                    {
+                        Debug.Log($"[LoginManager] Login Success! Auth ID: {db.AuthUserId}");
+                        // Auto-create/fetch a player record matching their email username
+                        StartCoroutine(db.UpsertPlayer(email, (playerJson) =>
+                        {
+                            ShowError("Login successful! Welcome.");
+                            ShowMainPanel();
+                        }));
+                    }
+                    else
+                    {
+                        ShowError($"Login Failed: {response}");
+                    }
+                }));
+            }
+            else
+            {
+                ShowError("DatabaseProvider not found.");
+            }
         }
 
         private void OnSignUpSubmit()
@@ -106,9 +130,29 @@ namespace Presentation
                 return;
             }
 
-            // TODO: Call authentication service
-            Debug.Log($"[LoginManager] Sign up attempt: {email}");
-            ShowError("Sign up not yet implemented.");
+            var db = Persistence.DatabaseProvider.Instance;
+            if (db != null)
+            {
+                signUpSubmitButton.interactable = false;
+                StartCoroutine(db.SignUpWithEmail(email, password, (ok, response) =>
+                {
+                    signUpSubmitButton.interactable = true;
+                    if (ok)
+                    {
+                        Debug.Log($"[LoginManager] Sign Up Success! Auth ID: {db.AuthUserId}");
+                        ShowError("Sign up successful! Please login.");
+                        ShowLoginPanel();
+                    }
+                    else
+                    {
+                        ShowError($"Sign Up Failed: {response}");
+                    }
+                }));
+            }
+            else
+            {
+                ShowError("DatabaseProvider not found.");
+            }
         }
 
         private void OnQuit()

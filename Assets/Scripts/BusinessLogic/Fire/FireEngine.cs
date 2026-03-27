@@ -27,15 +27,12 @@ namespace BusinessLogic {
         [SerializeField] private GridSystem    gridSystem;
         [Tooltip("Auto-populated at runtime if left empty.")]
         [SerializeField] private ProgressionManager progressionManager;
-        [Tooltip("Auto-populated at runtime if left empty.")]
-        [SerializeField] private CascadingFailureManager cascadeManager;
 
         private void Start() {
             // Auto-find references to make setup easier
             if (weatherSystem == null) weatherSystem = FindFirstObjectByType<WeatherSystem>();
             if (gridSystem == null) gridSystem = FindFirstObjectByType<GridSystem>();
             if (progressionManager == null) progressionManager = FindFirstObjectByType<ProgressionManager>();
-            if (cascadeManager == null) cascadeManager = FindFirstObjectByType<CascadingFailureManager>();
         }
 
         public void SetGridSystem(GridSystem grid) {
@@ -111,16 +108,7 @@ namespace BusinessLogic {
 
             float ignitionRate = progressionManager != null ? progressionManager.GetIgnitionRate() : 0.1f;
 
-            // Cascade boost: when any region is heavily damaged, fires spawn faster globally
-            float cascadeIgnitionBoost = 1f;
-            if (cascadeManager != null && gridSystem != null) {
-                foreach (var region in gridSystem.Regions) {
-                    float mult = cascadeManager.GetIgnitionMultiplier(region);
-                    if (mult > cascadeIgnitionBoost) cascadeIgnitionBoost = mult;
-                }
-            }
-
-            ignitionAccumulator += ignitionRate * cascadeIgnitionBoost * dt;
+            ignitionAccumulator += ignitionRate * dt;
 
             int maxAttempts = 10; // Prevent infinite loop if no valid tiles
             while (ignitionAccumulator >= 1f && maxAttempts > 0) {
@@ -142,7 +130,7 @@ namespace BusinessLogic {
                 // Use policy as a probability gate (e.g. fire ban = 0.5 means 50% chance to skip)
                 if (policyMod < 1.0f && Random.value > policyMod) continue;
 
-                Debug.Log($"[FireEngine] Auto-ignited ({tile.X},{tile.Y}) rate={ignitionRate:F2}/s cascade={cascadeIgnitionBoost:F2}x");
+                Debug.Log($"[FireEngine] Auto-ignited ({tile.X},{tile.Y}) rate={ignitionRate:F2}/s");
                 IgniteTile(tile);
             }
 
@@ -214,12 +202,8 @@ namespace BusinessLogic {
             float policyMod = PolicyManager.Instance != null
                 ? PolicyManager.Instance.GetSpreadModifierForRegion(sourceTile.Region) : 1.0f;
 
-            // Cascade modifier: damaged neighbor regions increase spread rate
-            float cascadeMod = cascadeManager != null
-                ? cascadeManager.GetSpreadMultiplier(sourceTile.Region) : 1f;
-
             // Accumulate spread rate
-            float effectiveRate = baseRate * (1f + intensityBoost) * policyMod * cascadeMod;
+            float effectiveRate = baseRate * (1f + intensityBoost) * policyMod;
             spreadAccumulators[sourceTile] += effectiveRate * dt;
 
             // Cap to prevent burst

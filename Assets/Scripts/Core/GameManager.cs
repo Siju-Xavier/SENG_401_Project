@@ -18,6 +18,7 @@ namespace Core {
         [SerializeField] private AutoSaveController autoSaveController;
         [SerializeField] private ProgressionManager progressionManager;
         [SerializeField] private UIManager uiManager;
+        [SerializeField] private GameOverManager gameOverManager;
 
         [Header("Player")]
         [SerializeField] private int playerId = 1;
@@ -47,6 +48,7 @@ namespace Core {
             if (saveManager == null) saveManager = FindFirstObjectByType<SaveManager>();
             if (autoSaveController == null) autoSaveController = FindFirstObjectByType<AutoSaveController>();
             if (uiManager == null) uiManager = FindFirstObjectByType<UIManager>();
+            if (gameOverManager == null) gameOverManager = FindFirstObjectByType<GameOverManager>();
 
             EventBroker.Instance.Subscribe(Core.EventType.GameEnded, EndGame);
             EventBroker.Instance.Subscribe(Core.EventType.FireStarted, OnFireStarted);
@@ -104,6 +106,11 @@ namespace Core {
             inputHandler = FindFirstObjectByType<InputHandler>();
             if (inputHandler != null && gridSystem != null)
                 inputHandler.SetGridSystem(gridSystem);
+
+            // Initialize game over tracking
+            if (gameOverManager != null && gridSystem != null) {
+                gameOverManager.SetGridSystem(gridSystem);
+            }
 
             // Start the fire simulation
             if (fireEngine != null) {
@@ -197,10 +204,20 @@ namespace Core {
 
         public void EndGame(object data = null) {
             Debug.Log("[GameManager] Game ended — saving final state.");
+            roundActive = false;
+
+            // Stop fire simulation
+            if (fireEngine != null) fireEngine.Pause();
 
             // Final save via the active IStorageProvider (local or cloud)
             if (saveManager != null) {
                 saveManager.SaveFile();
+            }
+
+            // Show game over UI
+            if (uiManager != null) {
+                int level = progressionManager != null ? progressionManager.CurrentLevel : 1;
+                uiManager.ShowGameOver(currentRound, level);
             }
         }
 

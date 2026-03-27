@@ -30,10 +30,15 @@ namespace Presentation
         [Header("Policy Panel")]
         [SerializeField] private PolicyPanelController policyPanel;
 
+        [Header("Destroyed State")]
+        [SerializeField] private GameObject destroyedOverlay;
+        [SerializeField] private TextMeshProUGUI destroyedText;
+
         private City currentCity;
         private ResourceManager resourceManager;
         private ProgressionManager progressionManager;
         private ScriptableObjects.EconomyConfig economyConfig;
+        private GameOverManager gameOverManager;
 
         private void Awake()
         {
@@ -56,6 +61,7 @@ namespace Presentation
         {
             resourceManager = FindFirstObjectByType<ResourceManager>();
             progressionManager = FindFirstObjectByType<ProgressionManager>();
+            gameOverManager = FindFirstObjectByType<GameOverManager>();
 #if UNITY_EDITOR
             if (economyConfig == null) {
                 economyConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<ScriptableObjects.EconomyConfig>("Assets/Sprites/ScriptableObjects/EconomyConfig.asset");
@@ -79,7 +85,28 @@ namespace Presentation
             if (cityNameText != null) cityNameText.text = city.CityName;
             else Debug.LogWarning("[CityPanelController] cityNameText is null!");
 
-            UpdateStatsText();
+            // Check if city is destroyed
+            bool destroyed = gameOverManager != null && gameOverManager.IsCityDestroyed(city);
+
+            if (destroyed) {
+                // Show destroyed state — disable buttons, show message
+                if (destroyedOverlay != null) destroyedOverlay.SetActive(true);
+                if (destroyedText != null) destroyedText.text = $"{city.CityName} has been lost to the fire.\nNo firefighters can be deployed from here.";
+                if (sendFirefighterButton != null) sendFirefighterButton.interactable = false;
+                if (policyButton != null) policyButton.interactable = false;
+
+                // Clear stats
+                if (budgetIncomeText != null) budgetIncomeText.text = "";
+                if (ignitionRateText != null) ignitionRateText.text = "";
+                if (recoveryRateText != null) recoveryRateText.text = "";
+                if (statsText != null) statsText.text = "";
+            } else {
+                // Normal state
+                if (destroyedOverlay != null) destroyedOverlay.SetActive(false);
+                if (sendFirefighterButton != null) sendFirefighterButton.interactable = true;
+                if (policyButton != null) policyButton.interactable = true;
+                UpdateStatsText();
+            }
 
             if (panelRoot != null) {
                 panelRoot.SetActive(true);
@@ -169,6 +196,7 @@ namespace Presentation
         private void OnSendFirefighterClicked()
         {
             if (currentCity == null) return;
+            if (gameOverManager != null && gameOverManager.IsCityDestroyed(currentCity)) return;
             Debug.Log($"[CityPanel] Sending firefighter from {currentCity.CityName}");
             if (resourceManager == null) {
                 resourceManager = FindFirstObjectByType<ResourceManager>();
@@ -183,6 +211,7 @@ namespace Presentation
         private void OnPolicyClicked()
         {
             if (currentCity == null) return;
+            if (gameOverManager != null && gameOverManager.IsCityDestroyed(currentCity)) return;
             Debug.Log($"[CityPanel] Opening policy menu for {currentCity.CityName}");
             if (policyPanel != null)
             {

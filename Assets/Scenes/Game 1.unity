@@ -1392,6 +1392,7 @@ GameObject:
   m_Component:
   - component: {fileID: 156371091}
   - component: {fileID: 156371092}
+  - component: {fileID: 156371094}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1435,9 +1436,25 @@ MonoBehaviour:
   autoSaveController: {fileID: 1235340864}
   progressionManager: {fileID: 363285927}
   uiManager: {fileID: 1430331832}
+  gameOverManager: {fileID: 156371094}
   playerId: 1
   roundDuration: 30
   fireIgnitionDelay: 5
+--- !u!114 &156371094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 156371090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cee10d15df32b4fe4bada70577acd370, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.GameOverManager
+  dangerThreshold: 0.25
+  criticalThreshold: 0.6
+  checkInterval: 0.5
 --- !u!1 &186531460
 GameObject:
   m_ObjectHideFlags: 0
@@ -3380,6 +3397,8 @@ MonoBehaviour:
   policyButton: {fileID: 48327585}
   closeButton: {fileID: 1530069793}
   policyPanel: {fileID: 601584880}
+  destroyedOverlay: {fileID: 0}
+  destroyedText: {fileID: 0}
 --- !u!114 &469267904
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5958,6 +5977,10 @@ MonoBehaviour:
   levelText: {fileID: 1968788002}
   timerText: {fileID: 424066397}
   firesCountText: {fileID: 0}
+  gameOverPanel: {fileID: 0}
+  gameOverStatsText: {fileID: 0}
+  mainMenuButton: {fileID: 0}
+  retryButton: {fileID: 0}
   alertDuration: 3
   progressionManager: {fileID: 0}
 --- !u!1 &791817900
@@ -9224,6 +9247,10 @@ MonoBehaviour:
   levelText: {fileID: 1968788002}
   timerText: {fileID: 424066397}
   firesCountText: {fileID: 865669826}
+  gameOverPanel: {fileID: 0}
+  gameOverStatsText: {fileID: 0}
+  mainMenuButton: {fileID: 0}
+  retryButton: {fileID: 0}
   alertDuration: 3
   progressionManager: {fileID: 363285927}
 --- !u!1 &1492352135

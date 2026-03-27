@@ -27,6 +27,12 @@ namespace Presentation
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private TextMeshProUGUI firesCountText;
 
+        [Header("Game Over Panel")]
+        [SerializeField] private GameObject gameOverPanel;
+        [SerializeField] private TextMeshProUGUI gameOverStatsText;
+        [SerializeField] private UnityEngine.UI.Button mainMenuButton;
+        [SerializeField] private UnityEngine.UI.Button retryButton;
+
         [Header("Alert Settings")]
         [SerializeField] private float alertDuration = 3f;
 
@@ -41,11 +47,17 @@ namespace Presentation
         private void OnEnable()
         {
             Core.EventBroker.Instance.Subscribe(Core.EventType.LevelUp, OnLevelUp);
+            Core.EventBroker.Instance.Subscribe(Core.EventType.CityInDanger, OnCityInDanger);
+            Core.EventBroker.Instance.Subscribe(Core.EventType.CityCritical, OnCityCritical);
+            Core.EventBroker.Instance.Subscribe(Core.EventType.CityDestroyed, OnCityDestroyed);
         }
 
         private void OnDisable()
         {
             Core.EventBroker.Instance.Unsubscribe(Core.EventType.LevelUp, OnLevelUp);
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.CityInDanger, OnCityInDanger);
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.CityCritical, OnCityCritical);
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.CityDestroyed, OnCityDestroyed);
         }
 
         private void Start()
@@ -54,12 +66,17 @@ namespace Presentation
             if (progressionManager == null) progressionManager = FindFirstObjectByType<BusinessLogic.ProgressionManager>();
             if (fireEngine == null) fireEngine = FindFirstObjectByType<BusinessLogic.FireEngine>();
 
-            // Hide alert banner on start
+            // Hide alert banner and game over panel on start
             if (alertBanner != null) alertBanner.SetActive(false);
+            if (gameOverPanel != null) gameOverPanel.SetActive(false);
+
+            // Wire game over buttons
+            if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnMainMenuClicked);
+            if (retryButton != null) retryButton.onClick.AddListener(OnRetryClicked);
 
             // Show default values
             UpdateRoundDisplay(1);
-            
+
             // Set initial level
             int initialLevel = progressionManager != null ? progressionManager.CurrentLevel : 1;
             UpdateLevelDisplay(initialLevel);
@@ -125,7 +142,8 @@ namespace Presentation
         {
             if (alertBanner == null || alertText == null)
             {
-                Debug.LogWarning("[UIManager] Alert banner or text not assigned in Inspector.");
+                // Fallback: log prominently so alerts are visible in console
+                Debug.LogWarning($"[ALERT] {message}");
                 return;
             }
 
@@ -144,8 +162,132 @@ namespace Presentation
             if (alertBanner != null) alertBanner.SetActive(false);
         }
 
+        // ── City Danger / Destruction Alerts ─────────────────────────────────
+
+        private void OnCityInDanger(object data)
+        {
+            if (data is GameState.City city)
+                ShowAlert($"{city.CityName} is under threat! Deploy firefighters now!");
+        }
+
+        private void OnCityCritical(object data)
+        {
+            if (data is GameState.City city)
+                ShowAlert($"{city.CityName} is burning! Act now or lose the city!");
+        }
+
+        private void OnCityDestroyed(object data)
+        {
+            if (data is GameState.City city)
+                ShowAlert($"{city.CityName} has been lost to the fire.");
+        }
+
+        // ── Game Over ───────────────────────────────────────────────────────
+
+        /// <summary>Show the game over panel with final stats.</summary>
+        public void ShowGameOver(int roundReached, int levelReached)
+        {
+            // Create panel at runtime if not wired in Inspector
+            if (gameOverPanel == null)
+                CreateGameOverPanel();
+
+            if (gameOverPanel != null)
+            {
+                gameOverPanel.SetActive(true);
+
+                if (gameOverStatsText != null)
+                {
+                    gameOverStatsText.text =
+                        $"All cities have fallen.\n\n" +
+                        $"Round Reached: {roundReached}\n" +
+                        $"Level Reached: {levelReached}";
+                }
+            }
+        }
+
+        /// <summary>Creates a simple game over panel at runtime when not assigned in Inspector.</summary>
+        private void CreateGameOverPanel()
+        {
+            // Find or create a canvas
+            var canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null) return;
+
+            // Dark overlay
+            gameOverPanel = new GameObject("GameOverPanel");
+            gameOverPanel.transform.SetParent(canvas.transform, false);
+            var rt = gameOverPanel.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            var bg = gameOverPanel.AddComponent<UnityEngine.UI.Image>();
+            bg.color = new Color(0f, 0f, 0f, 0.85f);
+
+            // Stats text
+            var statsGO = new GameObject("StatsText");
+            statsGO.transform.SetParent(gameOverPanel.transform, false);
+            var statsRT = statsGO.AddComponent<RectTransform>();
+            statsRT.anchorMin = new Vector2(0.2f, 0.35f);
+            statsRT.anchorMax = new Vector2(0.8f, 0.75f);
+            statsRT.offsetMin = Vector2.zero;
+            statsRT.offsetMax = Vector2.zero;
+            gameOverStatsText = statsGO.AddComponent<TextMeshProUGUI>();
+            gameOverStatsText.alignment = TMPro.TextAlignmentOptions.Center;
+            gameOverStatsText.fontSize = 28;
+            gameOverStatsText.color = Color.white;
+
+            // Main Menu button
+            CreateButton(gameOverPanel.transform, "Main Menu", new Vector2(0.3f, 0.15f), new Vector2(0.5f, 0.25f), OnMainMenuClicked);
+
+            // Retry button
+            CreateButton(gameOverPanel.transform, "Retry", new Vector2(0.5f, 0.15f), new Vector2(0.7f, 0.25f), OnRetryClicked);
+        }
+
+        private void CreateButton(Transform parent, string label, Vector2 anchorMin, Vector2 anchorMax, UnityEngine.Events.UnityAction onClick)
+        {
+            var btnGO = new GameObject(label + "Button");
+            btnGO.transform.SetParent(parent, false);
+            var btnRT = btnGO.AddComponent<RectTransform>();
+            btnRT.anchorMin = anchorMin;
+            btnRT.anchorMax = anchorMax;
+            btnRT.offsetMin = Vector2.zero;
+            btnRT.offsetMax = Vector2.zero;
+
+            var btnImg = btnGO.AddComponent<UnityEngine.UI.Image>();
+            btnImg.color = new Color(0.8f, 0.2f, 0.2f, 1f);
+
+            var btn = btnGO.AddComponent<UnityEngine.UI.Button>();
+            btn.targetGraphic = btnImg;
+            btn.onClick.AddListener(onClick);
+
+            var textGO = new GameObject("Text");
+            textGO.transform.SetParent(btnGO.transform, false);
+            var textRT = textGO.AddComponent<RectTransform>();
+            textRT.anchorMin = Vector2.zero;
+            textRT.anchorMax = Vector2.one;
+            textRT.offsetMin = Vector2.zero;
+            textRT.offsetMax = Vector2.zero;
+            var tmp = textGO.AddComponent<TextMeshProUGUI>();
+            tmp.text = label;
+            tmp.alignment = TMPro.TextAlignmentOptions.Center;
+            tmp.fontSize = 20;
+            tmp.color = Color.white;
+        }
+
+        private void OnMainMenuClicked()
+        {
+            Time.timeScale = 1f;
+            SceneLoader.LoadScene("MainMenu");
+        }
+
+        private void OnRetryClicked()
+        {
+            Time.timeScale = 1f;
+            SceneLoader.LoadScene("Game 1");
+        }
+
         // ── Panel Stubs ──────────────────────────────────────────────────────
-        // These will be wired up when those panels are built.
 
         public void ShowPolicyPanel()    => Debug.Log("[UIManager] Policy panel — coming soon.");
         public void ShowDeploymentPanel() => Debug.Log("[UIManager] Deployment panel — coming soon.");

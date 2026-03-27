@@ -11,6 +11,9 @@ namespace Presentation
         [SerializeField] private GameObject loginPanel;
         [SerializeField] private GameObject signUpPanel;
 
+        [Header("Scene Navigation")]
+        [SerializeField] private string nextSceneName = "MainMenu";
+
         [Header("Error Display")]
         [SerializeField] private TextMeshProUGUI errorText;
 
@@ -96,8 +99,11 @@ namespace Presentation
                         // Auto-create/fetch a player record matching their email username
                         StartCoroutine(db.UpsertPlayer(email, (playerJson) =>
                         {
-                            ShowError("Login successful! Welcome.");
-                            ShowMainPanel();
+                            ShowError("Login successful! Loading game...");
+                            if (!string.IsNullOrEmpty(nextSceneName))
+                                UnityEngine.SceneManagement.SceneManager.LoadScene(nextSceneName);
+                            else
+                                ShowMainPanel();
                         }));
                     }
                     else

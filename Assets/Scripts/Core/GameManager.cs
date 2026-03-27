@@ -18,6 +18,7 @@ namespace Core {
         [SerializeField] private AutoSaveController autoSaveController;
         [SerializeField] private ProgressionManager progressionManager;
         [SerializeField] private UIManager uiManager;
+        [SerializeField] private CascadingFailureManager cascadeManager;
 
         [Header("Player")]
         [SerializeField] private int playerId = 1;
@@ -47,6 +48,7 @@ namespace Core {
             if (saveManager == null) saveManager = FindFirstObjectByType<SaveManager>();
             if (autoSaveController == null) autoSaveController = FindFirstObjectByType<AutoSaveController>();
             if (uiManager == null) uiManager = FindFirstObjectByType<UIManager>();
+            if (cascadeManager == null) cascadeManager = FindFirstObjectByType<CascadingFailureManager>();
 
             EventBroker.Instance.Subscribe(Core.EventType.GameEnded, EndGame);
             EventBroker.Instance.Subscribe(Core.EventType.FireStarted, OnFireStarted);
@@ -104,6 +106,11 @@ namespace Core {
             inputHandler = FindFirstObjectByType<InputHandler>();
             if (inputHandler != null && gridSystem != null)
                 inputHandler.SetGridSystem(gridSystem);
+
+            // Initialize cascading failure tracking
+            if (cascadeManager != null && gridSystem != null) {
+                cascadeManager.SetGridSystem(gridSystem);
+            }
 
             // Start the fire simulation
             if (fireEngine != null) {
@@ -174,6 +181,8 @@ namespace Core {
                     float recoveryRate = progressionManager != null ? progressionManager.GetRecoveryRate() : 0.25f;
                     fireEngine.RecoverBurntTiles(recoveryRate);
                 }
+                // Reset cascade pressure after a successful round
+                if (cascadeManager != null) cascadeManager.ResetCascadeState();
             } else {
                 Debug.Log("[GameManager] A city was damaged this round. No level progression.");
             }

@@ -227,6 +227,12 @@ namespace Core {
             Debug.Log("[GameManager] Restoring game from save data.");
             currentTick  = save.currentTick;
             currentRound = save.currentRound;
+            roundTimer   = save.roundTimer > 0f ? save.roundTimer : roundDuration;
+            roundActive  = save.roundActive || (save.currentRound > 0); 
+
+            if (progressionManager != null && save.progressionLevel > 0) {
+                progressionManager.SetLevel(save.progressionLevel);
+            }
 
             // Restore weather
             if (weatherSystem != null && save.wind != null) {
@@ -266,9 +272,12 @@ namespace Core {
             var data = new SaveManager.GameSaveData {
                 currentTick  = currentTick,
                 currentRound = currentRound,
+                roundTimer   = roundTimer,
+                roundActive  = roundActive,
                 randomSeed   = mapOrchestrator != null ? mapOrchestrator.Seed : 0,
                 mapWidth     = gridSystem != null ? gridSystem.Width  : 64,
                 mapHeight    = gridSystem != null ? gridSystem.Height : 64,
+                progressionLevel = progressionManager != null ? progressionManager.CurrentLevel : 1,
             };
 
             // Regions & Cities

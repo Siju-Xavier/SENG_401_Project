@@ -96,9 +96,24 @@ namespace Presentation
                     if (ok)
                     {
                         Debug.Log($"[LoginManager] Login Success! Auth ID: {db.AuthUserId}");
-                        // Auto-create/fetch a player record matching their email username
                         StartCoroutine(db.UpsertPlayer(email, (playerJson) =>
                         {
+                            if (!string.IsNullOrEmpty(playerJson))
+                            {
+                                int idIndex = playerJson.IndexOf("\"id\":");
+                                if (idIndex > 0)
+                                {
+                                    int start = idIndex + 5;
+                                    int end = playerJson.IndexOf(',', start);
+                                    if (end == -1) end = playerJson.IndexOf('}', start);
+                                    if (int.TryParse(playerJson.Substring(start, end - start).Trim(), out int pid))
+                                    {
+                                        db.SetPlayerId(pid);
+                                        Debug.Log($"[LoginManager] activePlayerId set to {pid}");
+                                    }
+                                }
+                            }
+
                             ShowError("Login successful! Loading game...");
                             if (!string.IsNullOrEmpty(nextSceneName))
                                 UnityEngine.SceneManagement.SceneManager.LoadScene(nextSceneName);

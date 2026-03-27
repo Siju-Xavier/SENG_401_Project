@@ -131,6 +131,7 @@ namespace Presentation
         {
             if (pausePanel != null) pausePanel.SetActive(false);
             if (savePanel != null) savePanel.SetActive(true);
+            else Debug.LogWarning("[PauseMenuController] Cannot open Save Panel because it is NULL. Assign it in the Inspector!");
         }
 
         public void CloseSavePanel()

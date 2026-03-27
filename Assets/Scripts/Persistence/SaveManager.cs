@@ -45,6 +45,8 @@ namespace Persistence
         {
             public int currentTick;
             public int currentRound;
+            public float roundTimer;
+            public bool roundActive;
             public int randomSeed;
 
             // Grid dimensions

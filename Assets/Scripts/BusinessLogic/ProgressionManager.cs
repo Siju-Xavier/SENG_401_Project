@@ -30,6 +30,14 @@ namespace BusinessLogic {
 
         public int CurrentLevel => progressionData != null ? Mathf.Max(1, progressionData.CurrentLevel) : 1;
 
+        public void SetLevel(int level) {
+            if (progressionData != null) {
+                progressionData.CurrentLevel = level;
+                Debug.Log($"[Progression] Level loaded: {level}");
+                EventBroker.Instance.Publish(Core.EventType.LevelUp, level);
+            }
+        }
+
         private void Awake()
         {
             if (progressionData != null && progressionData.CurrentLevel < 1)

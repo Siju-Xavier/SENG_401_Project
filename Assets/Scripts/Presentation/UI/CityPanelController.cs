@@ -189,6 +189,10 @@ namespace Presentation
                 if (panelRoot != null) panelRoot.SetActive(false);
                 policyPanel.Show(currentCity);
             }
+            else
+            {
+                Debug.LogError("[CityPanel] policyPanel reference is NULL! Assign the PolicyPanelController in the Inspector.");
+            }
         }
 
         public void ShowFromPolicyBack()

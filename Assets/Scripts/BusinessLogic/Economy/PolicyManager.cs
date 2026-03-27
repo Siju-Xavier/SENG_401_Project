@@ -5,7 +5,7 @@ namespace BusinessLogic {
     using UnityEngine;
 
     public class PolicyManager : MonoBehaviour {
-        [SerializeField] private PlayerProgression progression;
+        private ProgressionManager progressionManager;
 
         private Dictionary<Region, List<PolicyConfig>> activePolicies = new Dictionary<Region, List<PolicyConfig>>();
         private Dictionary<Region, float> costAccumulators = new Dictionary<Region, float>();
@@ -16,6 +16,14 @@ namespace BusinessLogic {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
         }
+
+        private void Start() {
+            progressionManager = FindFirstObjectByType<ProgressionManager>();
+            if (progressionManager == null)
+                Debug.LogWarning("[PolicyManager] ProgressionManager not found in scene!");
+        }
+
+        private int CurrentLevel => progressionManager != null ? progressionManager.CurrentLevel : 1;
 
         private void OnDestroy() {
             if (Instance == this) Instance = null;
@@ -63,8 +71,8 @@ namespace BusinessLogic {
         public void AddPolicy(PolicyConfig policy, Region region) {
             if (policy == null || region == null) return;
 
-            if (progression != null && progression.CurrentLevel < policy.RequiredLevel) {
-                Debug.LogWarning($"[PolicyManager] Cannot apply {policy.PolicyName}: Requires Level {policy.RequiredLevel}");
+            if (CurrentLevel < policy.RequiredLevel) {
+                Debug.LogWarning($"[PolicyManager] Cannot apply {policy.PolicyName}: Requires Level {policy.RequiredLevel} (current: {CurrentLevel})");
                 return;
             }
 

@@ -50,6 +50,19 @@ namespace Presentation
             WireListeners();
             gridSystem = FindFirstObjectByType<GridSystem>();
             progressionManager = FindFirstObjectByType<ProgressionManager>();
+
+            // Ensure PolicyManager singleton exists at runtime
+            if (PolicyManager.Instance == null)
+            {
+                var existing = FindFirstObjectByType<PolicyManager>();
+                if (existing == null)
+                {
+                    Debug.LogWarning("[PolicyPanel] No PolicyManager found in scene — creating one at runtime.");
+                    var go = new GameObject("PolicyManager");
+                    go.AddComponent<PolicyManager>();
+                }
+            }
+
 #if UNITY_EDITOR
             if (economyConfig == null)
                 economyConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<EconomyConfig>("Assets/Sprites/ScriptableObjects/EconomyConfig.asset");
@@ -70,8 +83,19 @@ namespace Presentation
 
         public void Show(City city)
         {
+            Debug.Log($"[PolicyPanel] Show() called. city={city?.CityName ?? "NULL"}, PM.Instance={PolicyManager.Instance != null}, gridSystem={gridSystem != null}");
+            _loggedOnce = false;
             currentCity = city;
             currentRegion = FindRegionForCity(city);
+            Debug.Log($"[PolicyPanel] currentRegion={currentRegion?.RegionName ?? "NULL"}");
+
+            if (PolicyManager.Instance == null)
+            {
+                Debug.LogWarning("[PolicyPanel] PolicyManager.Instance is STILL null after Show(). Creating one now.");
+                var go = new GameObject("PolicyManager");
+                go.AddComponent<PolicyManager>();
+            }
+
             gameObject.SetActive(true);
             RefreshUI();
         }
@@ -125,14 +149,22 @@ namespace Presentation
             }
 
             // Update buttons
-            UpdateButton(button1, policy1, cityCount);
-            UpdateButton(button2, policy2, cityCount);
-            UpdateButton(button3, policy3, cityCount);
+            UpdateButton(button1, policy1, cityCount, "Button1");
+            UpdateButton(button2, policy2, cityCount, "Button2");
+            UpdateButton(button3, policy3, cityCount, "Button3");
+            _loggedOnce = true;
         }
 
-        private void UpdateButton(Button btn, PolicyConfig policy, int cityCount)
+        private bool _loggedOnce;
+
+        private void UpdateButton(Button btn, PolicyConfig policy, int cityCount, string label)
         {
-            if (btn == null || policy == null) return;
+            if (btn == null || policy == null)
+            {
+                if (!_loggedOnce)
+                    Debug.LogWarning($"[PolicyPanel] {label}: btn={btn != null}, policy={policy != null} — SKIPPING (null ref!)");
+                return;
+            }
 
             bool isActive = PolicyManager.Instance != null
                          && PolicyManager.Instance.IsPolicyActive(policy, currentRegion);
@@ -140,6 +172,9 @@ namespace Presentation
             int level = progressionManager != null ? progressionManager.CurrentLevel : 1;
             bool levelTooLow = level < policy.RequiredLevel;
             bool isDisabled = needsMoreCities || levelTooLow;
+
+            if (!_loggedOnce)
+                Debug.Log($"[PolicyPanel] {label}: policy={policy.PolicyName}, level={level}, reqLvl={policy.RequiredLevel}, levelTooLow={levelTooLow}, needsMoreCities={needsMoreCities}, isDisabled={isDisabled}, isActive={isActive}");
 
             var img = btn.GetComponent<Image>();
             var txt = btn.GetComponentInChildren<TextMeshProUGUI>();
@@ -162,11 +197,17 @@ namespace Presentation
                     : "(Requires 2+ cities)";
                 if (txt != null) txt.text = $"{policy.PolicyName}\n<size=12>{reason}</size>";
             }
+            else if (isActive)
+            {
+                btn.interactable = true;
+                if (img != null) img.color = ACTIVE_COLOR;
+                if (txt != null) txt.text = $"[ON] {policy.PolicyName}\n<size=12>ACTIVE - {costLine} (click to deactivate)</size>";
+            }
             else
             {
                 btn.interactable = true;
-                if (img != null) img.color = isActive ? ACTIVE_COLOR : INACTIVE_COLOR;
-                if (txt != null) txt.text = $"{policy.PolicyName}\n<size=12>{costLine}</size>";
+                if (img != null) img.color = INACTIVE_COLOR;
+                if (txt != null) txt.text = $"{policy.PolicyName}\n<size=12>{costLine} (click to activate)</size>";
             }
         }
 

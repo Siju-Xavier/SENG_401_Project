@@ -1392,6 +1392,7 @@ GameObject:
   m_Component:
   - component: {fileID: 156371091}
   - component: {fileID: 156371092}
+  - component: {fileID: 156371093}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1435,9 +1436,27 @@ MonoBehaviour:
   autoSaveController: {fileID: 1235340864}
   progressionManager: {fileID: 363285927}
   uiManager: {fileID: 1430331832}
+  cascadeManager: {fileID: 0}
   playerId: 1
   roundDuration: 30
   fireIgnitionDelay: 5
+--- !u!114 &156371093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 156371090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b585382b2fa14471babdd1bb28a75b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BusinessLogic.CascadingFailureManager
+  cascadeThreshold: 0.3
+  maxCascadeMultiplier: 2
+  ignitionCascadeWeight: 0.7
+  spreadCascadeWeight: 1
+  updateInterval: 1
 --- !u!1 &186531460
 GameObject:
   m_ObjectHideFlags: 0
@@ -7373,6 +7392,7 @@ MonoBehaviour:
   weatherSystem: {fileID: 1831033177}
   gridSystem: {fileID: 5533442}
   progressionManager: {fileID: 363285927}
+  cascadeManager: {fileID: 0}
   windInfluence: 0.6
   burnIntensityPerSecond: 0.1
   burnoutThreshold: 2

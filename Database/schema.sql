@@ -231,14 +231,42 @@ ALTER TABLE city_reputations      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unlocks               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE game_stats            ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "anon_all_players"               ON players;
 CREATE POLICY "anon_all_players"               ON players               FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "auth_all_players"               ON players;
+CREATE POLICY "auth_all_players"               ON players               FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "anon_all_game_settings"         ON game_settings;
 CREATE POLICY "anon_all_game_settings"         ON game_settings         FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "auth_all_game_settings"         ON game_settings;
+CREATE POLICY "auth_all_game_settings"         ON game_settings         FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "anon_all_save_games"            ON save_games;
 CREATE POLICY "anon_all_save_games"            ON save_games            FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "auth_all_save_games"            ON save_games;
+CREATE POLICY "auth_all_save_games"            ON save_games            FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "anon_all_regions"               ON regions;
 CREATE POLICY "anon_all_regions"               ON regions               FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "auth_all_regions"               ON regions;
+CREATE POLICY "auth_all_regions"               ON regions               FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "anon_all_active_response_units" ON active_response_units;
 CREATE POLICY "anon_all_active_response_units" ON active_response_units FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "anon_all_city_reputations"      ON city_reputations;
 CREATE POLICY "anon_all_city_reputations"      ON city_reputations      FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "auth_all_city_reputations"      ON city_reputations;
+CREATE POLICY "auth_all_city_reputations"      ON city_reputations      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "anon_all_unlocks"               ON unlocks;
 CREATE POLICY "anon_all_unlocks"               ON unlocks               FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "auth_all_unlocks"               ON unlocks;
+CREATE POLICY "auth_all_unlocks"               ON unlocks               FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "anon_all_game_stats"            ON game_stats;
 CREATE POLICY "anon_all_game_stats"            ON game_stats            FOR ALL TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "auth_all_game_stats"            ON game_stats;
+CREATE POLICY "auth_all_game_stats"            ON game_stats            FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 
 -- ── Useful Views ─────────────────────────────────────────────────────────────

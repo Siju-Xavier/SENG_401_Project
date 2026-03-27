@@ -4980,6 +4980,55 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1243186358}
   m_CullTransparentMesh: 1
+--- !u!1 &1392188231
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1392188233}
+  - component: {fileID: 1392188232}
+  m_Layer: 0
+  m_Name: DatabaseManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1392188232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392188231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 64813dbd9dd5e644b868e20f3c7bb3d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Persistence.DatabaseProvider
+  supabaseUrl: https://knugnxjsohrolcjrakoo.supabase.co
+  supabaseAnonKey: sb_publishable_JNaZsggrPt7sGmd5108CXA_eHSGENa7
+  count: 5
+  AccessToken: 
+  AuthUserId: 
+--- !u!4 &1392188233
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392188231}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 18.45387, y: 10.65681, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1420000366
 GameObject:
   m_ObjectHideFlags: 0
@@ -7484,3 +7533,4 @@ SceneRoots:
   - {fileID: 99702530}
   - {fileID: 731195094}
   - {fileID: 373219809}
+  - {fileID: 1392188233}

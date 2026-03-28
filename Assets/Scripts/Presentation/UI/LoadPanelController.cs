@@ -19,11 +19,8 @@ namespace Presentation
         [Header("Buttons")]
         [SerializeField] private Button backButton;
 
-        private SaveManager saveManager;
-
         private void OnEnable()
         {
-            saveManager = FindFirstObjectByType<SaveManager>();
             PopulateLocalSaves();
             PopulateOnlineSaves();
         }
@@ -70,20 +67,22 @@ namespace Presentation
             try
             {
                 string json = System.IO.File.ReadAllText(filePath);
+                // Quick extract saveName without full deserialization
                 var data = JsonUtility.FromJson<SaveManager.GameSaveData>(json);
                 if (data != null && !string.IsNullOrEmpty(data.saveName))
                     return data.saveName;
             }
-            catch { }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[LoadPanel] Could not read save name from {filePath}: {e.Message}");
+            }
 
-            // Fallback to filename without extension
             return System.IO.Path.GetFileNameWithoutExtension(filePath);
         }
 
         private void OnLoadLocalSlot(string filePath)
         {
             Debug.Log($"[LoadPanel] Loading local slot: {filePath}");
-            Debug.Log($"[LoadPanel] File exists: {System.IO.File.Exists(filePath)}");
 
             string json = LocalFileProvider.LoadSlot(filePath);
             if (string.IsNullOrEmpty(json))
@@ -92,24 +91,16 @@ namespace Presentation
                 return;
             }
 
-            Debug.Log($"[LoadPanel] JSON length: {json.Length}, preview: {json.Substring(0, Mathf.Min(200, json.Length))}");
-
-            var sm = FindFirstObjectByType<SaveManager>();
-            if (sm != null)
+            var data = JsonUtility.FromJson<SaveManager.GameSaveData>(json);
+            if (data != null)
             {
-                var data = sm.Deserialize(json);
-                if (data != null)
-                {
-                    SaveManager.PendingLoadData = data;
-                    MainMenuManager.ShouldLoadSave = true;
-                    SceneLoader.LoadScene("Game 1");
-                    return;
-                }
-                Debug.LogWarning("[LoadPanel] Deserialize returned null.");
+                SaveManager.PendingLoadData = data;
+                MainMenuManager.ShouldLoadSave = true;
+                SceneLoader.LoadScene("Game 1");
             }
             else
             {
-                Debug.LogWarning("[LoadPanel] SaveManager not found.");
+                Debug.LogWarning("[LoadPanel] Failed to parse local save.");
             }
         }
 
@@ -261,34 +252,29 @@ namespace Presentation
 
         private void OnLoadCloud(string gameStateJson)
         {
-            Debug.Log($"[LoadPanel] Loading cloud save... JSON length: {gameStateJson?.Length ?? 0}");
             if (string.IsNullOrEmpty(gameStateJson))
             {
                 Debug.LogWarning("[LoadPanel] Cloud save game_state is empty.");
                 return;
             }
 
-            Debug.Log($"[LoadPanel] Cloud JSON preview: {gameStateJson.Substring(0, Mathf.Min(200, gameStateJson.Length))}");
+            Debug.Log($"[LoadPanel] Loading cloud save... JSON length: {gameStateJson.Length}");
 
-            var sm = FindFirstObjectByType<SaveManager>();
-            if (sm != null)
+            try
             {
-                try
+                var data = JsonUtility.FromJson<SaveManager.GameSaveData>(gameStateJson);
+                if (data != null)
                 {
-                    var data = sm.Deserialize(gameStateJson);
-                    if (data != null)
-                    {
-                        SaveManager.PendingLoadData = data;
-                        MainMenuManager.ShouldLoadSave = true;
-                        SceneLoader.LoadScene("Game 1");
-                        return;
-                    }
-                    Debug.LogWarning("[LoadPanel] Cloud deserialize returned null.");
+                    SaveManager.PendingLoadData = data;
+                    MainMenuManager.ShouldLoadSave = true;
+                    SceneLoader.LoadScene("Game 1");
+                    return;
                 }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"[LoadPanel] Cloud deserialize error: {e.Message}");
-                }
+                Debug.LogWarning("[LoadPanel] Cloud deserialize returned null.");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[LoadPanel] Cloud deserialize error: {e.Message}");
             }
         }
 

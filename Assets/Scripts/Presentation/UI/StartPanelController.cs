@@ -44,8 +44,34 @@ namespace Presentation
                 citiesDropdown.value = 0;
             }
 
+            // Ensure dropdown lists render on top of buttons below them
+            EnsureDropdownRendersOnTop(mapSizeDropdown);
+            EnsureDropdownRendersOnTop(citiesDropdown);
+
             if (startButton != null)
                 startButton.onClick.AddListener(OnStart);
+        }
+
+        private void EnsureDropdownRendersOnTop(TMP_Dropdown dropdown)
+        {
+            if (dropdown == null) return;
+            var template = dropdown.template;
+            if (template != null)
+            {
+                // Override sorting so dropdown renders above sibling buttons
+                var canvas = template.GetComponent<Canvas>();
+                if (canvas == null) canvas = template.gameObject.AddComponent<Canvas>();
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = 100;
+
+                if (template.GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
+                    template.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+                // Make the template tall enough to show all items without scrolling
+                // Each item is ~30px, so 3 items + padding = ~120px
+                var sd = template.sizeDelta;
+                if (sd.y < 120f) template.sizeDelta = new Vector2(sd.x, 120f);
+            }
         }
 
         private void OnDisable()

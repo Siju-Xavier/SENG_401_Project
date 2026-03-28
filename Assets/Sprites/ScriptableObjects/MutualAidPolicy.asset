@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b0bb68102d4a544b9310807bd6d47a7, type: 3}
   m_Name: MutualAidPolicy
   m_EditorClassIdentifier: Assembly-CSharp::ScriptableObjects.PolicyConfig
-  policyName: 
+  policyName: Mutual Aid
   description: 
   requiredLevel: 10
   requiresMultipleCities: 1

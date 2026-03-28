@@ -55,20 +55,21 @@ namespace Presentation
         private void EnsureDropdownRendersOnTop(TMP_Dropdown dropdown)
         {
             if (dropdown == null) return;
-            // The dropdown template is the list that appears when expanded.
-            // Adding an override Canvas with a higher sort order ensures it
-            // renders above sibling UI elements like the START/BACK buttons.
             var template = dropdown.template;
             if (template != null)
             {
+                // Override sorting so dropdown renders above sibling buttons
                 var canvas = template.GetComponent<Canvas>();
                 if (canvas == null) canvas = template.gameObject.AddComponent<Canvas>();
                 canvas.overrideSorting = true;
                 canvas.sortingOrder = 100;
 
-                // GraphicRaycaster is needed for clicks to register on the dropdown items
                 if (template.GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
                     template.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+                // Flip the dropdown to expand upward instead of downward
+                // by changing the pivot to bottom and anchoring to top of the dropdown
+                template.pivot = new Vector2(0.5f, 0f);
             }
         }
 

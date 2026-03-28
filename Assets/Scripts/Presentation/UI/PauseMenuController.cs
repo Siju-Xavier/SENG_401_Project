@@ -15,6 +15,7 @@ namespace Presentation
         [SerializeField] private Button settingsBtn;
         [SerializeField] private Button saveBtn;
         [SerializeField] private Button mainMenuBtn;
+        [SerializeField] private Button quitBtn;
 
         [Header("Settings Panel")]
         [SerializeField] private GameObject settingsPanel;
@@ -47,8 +48,9 @@ namespace Presentation
                 if (resumeBtn == null) resumeBtn = FindButton(pausePanel, "ResumeButton");
                 if (settingsBtn == null) settingsBtn = FindButton(pausePanel, "SettingsButton");
                 if (saveBtn == null) saveBtn = FindButton(pausePanel, "SaveButton");
-                if (mainMenuBtn == null) mainMenuBtn = FindButton(pausePanel, "MainMenuButton")
-                                                    ?? FindButton(pausePanel, "QuitButton");
+                if (mainMenuBtn == null) mainMenuBtn = FindButton(pausePanel, "MainMenuButton");
+                if (quitBtn == null) quitBtn = FindButton(pausePanel, "QuitButton")
+                                            ?? FindButton(pausePanel, "ExitButton");
             }
 
             if (settingsPanel != null && closeSettingsBtn == null)
@@ -65,6 +67,7 @@ namespace Presentation
             if (settingsBtn != null) settingsBtn.onClick.AddListener(OpenSettings);
             if (saveBtn != null) saveBtn.onClick.AddListener(OpenSavePanel);
             if (mainMenuBtn != null) mainMenuBtn.onClick.AddListener(GoToMainMenu);
+            if (quitBtn != null) quitBtn.onClick.AddListener(QuitGame);
             if (closeSettingsBtn != null) closeSettingsBtn.onClick.AddListener(CloseSettings);
             if (closeSaveBtn != null) closeSaveBtn.onClick.AddListener(CloseSavePanel);
 
@@ -155,7 +158,17 @@ namespace Presentation
         public void GoToMainMenu()
         {
             Time.timeScale = 1f;
-            SceneLoader.LoadScene("Login");
+            SceneLoader.LoadScene("MainMenu");
+        }
+
+        public void QuitGame()
+        {
+            Debug.Log("[PauseMenu] Quit requested.");
+            #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+            #else
+            Application.Quit();
+            #endif
         }
 
         private void SetPaused(bool paused)

@@ -112,13 +112,40 @@ namespace Core {
                 gameOverManager.SetGridSystem(gridSystem);
             }
 
-            // Start the fire simulation
+            // Show tutorial before starting fires
+            StartCoroutine(ShowTutorialThenStart());
+        }
+
+        private IEnumerator ShowTutorialThenStart() {
+            // Gather city names for the tutorial text
+            var cityNames = new System.Collections.Generic.List<string>();
+            if (gridSystem != null) {
+                foreach (var region in gridSystem.Regions) {
+                    if (region.City != null)
+                        cityNames.Add(region.City.CityName);
+                }
+            }
+
+            // Launch tutorial (pauses timeScale if shown)
+            var tutorial = FindFirstObjectByType<TutorialManager>();
+            if (tutorial == null) {
+                // Auto-create one if not in the scene
+                var go = new GameObject("TutorialManager");
+                tutorial = go.AddComponent<TutorialManager>();
+            }
+            tutorial.StartTutorial(cityNames);
+
+            // Wait for tutorial to finish (uses realtime since timeScale is 0)
+            while (tutorial != null && tutorial.IsTutorialActive) {
+                yield return null;
+            }
+
+            // Now start the actual game
             if (fireEngine != null) {
                 if (gridSystem != null) fireEngine.SetGridSystem(gridSystem);
                 fireEngine.Resume();
             }
 
-            // Start the auto-save loop
             if (autoSaveController != null)
                 autoSaveController.Run();
 

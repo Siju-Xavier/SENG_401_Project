@@ -88,6 +88,10 @@ namespace Presentation
             // Don't allow pause toggle when game is over
             if (gameOverManager != null && gameOverManager.IsGameOver) return;
 
+            // Don't allow pause during tutorial
+            var tutorial = FindFirstObjectByType<TutorialManager>();
+            if (tutorial != null && tutorial.IsTutorialActive) return;
+
             // If a sub-panel is open, close it back to pause panel
             if (settingsPanel != null && settingsPanel.activeSelf)
             {

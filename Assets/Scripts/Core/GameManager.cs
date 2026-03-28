@@ -273,26 +273,89 @@ namespace Core {
             }
 
             Debug.Log("[GameManager] Restoring game from save data.");
+            StartCoroutine(WaitForMapAndRestoreSave(save));
+        }
+
+        private IEnumerator WaitForMapAndRestoreSave(SaveManager.GameSaveData save) {
+            // Wait for the map to generate (same as new game)
+            while (mapOrchestrator == null || mapOrchestrator.GridSystem == null) {
+                yield return null;
+            }
+            gridSystem = mapOrchestrator.GridSystem;
+
+            // ── Core state ──
             currentTick  = save.currentTick;
             currentRound = save.currentRound;
             roundTimer   = save.roundTimer > 0f ? save.roundTimer : roundDuration;
-            roundActive  = save.roundActive || (save.currentRound > 0); 
+            roundActive  = true;
 
+            // ── Progression ──
             if (progressionManager != null && save.progressionLevel > 0) {
                 progressionManager.SetLevel(save.progressionLevel);
             }
 
-            // Restore weather
+            // ── Weather ──
             if (weatherSystem != null && save.wind != null) {
+                weatherSystem.SetWind(
+                    new Vector2(save.wind.dirX, save.wind.dirY),
+                    save.wind.speed
+                );
                 Debug.Log($"[GameManager] Restored wind: ({save.wind.dirX}, {save.wind.dirY}), speed {save.wind.speed}");
             }
 
-            // Restore fires from save data and resume simulation
-            if (fireEngine != null) {
-                if (mapOrchestrator != null)
-                    gridSystem = mapOrchestrator.GridSystem;
+            // ── City budgets ──
+            if (gridSystem != null && save.regions != null) {
+                foreach (var regionSave in save.regions) {
+                    foreach (var citySave in regionSave.cities) {
+                        // Find the matching city in the grid
+                        foreach (var region in gridSystem.Regions) {
+                            if (region.City != null && region.City.CityName == citySave.cityName) {
+                                region.City.Budget = citySave.budget;
+                                Debug.Log($"[GameManager] Restored {citySave.cityName} budget: {citySave.budget}");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
 
-                if (gridSystem != null && save.activeFires != null) {
+            // ── Initialize resource manager ──
+            if (resourceManager != null && gridSystem != null) {
+                resourceManager.Initialize(gridSystem.Regions);
+                resourceManager.SetGridSystem(gridSystem);
+            }
+
+            // ── Wire input handler ──
+            inputHandler = FindFirstObjectByType<InputHandler>();
+            if (inputHandler != null && gridSystem != null)
+                inputHandler.SetGridSystem(gridSystem);
+
+            // ── Initialize game over tracking ──
+            if (gameOverManager != null && gridSystem != null) {
+                gameOverManager.SetGridSystem(gridSystem);
+            }
+
+            // ── Burnt tiles ──
+            if (gridSystem != null && save.burntTiles != null) {
+                int restoredBurnt = 0;
+                foreach (var burnt in save.burntTiles) {
+                    var tile = gridSystem.GetTileAt(burnt.posX, burnt.posY);
+                    if (tile != null) {
+                        tile.IsBurnt = true;
+                        tile.MoistureLevel = burnt.moisture;
+                        restoredBurnt++;
+                        // Notify renderers to show the burnt visual
+                        EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
+                    }
+                }
+                Debug.Log($"[GameManager] Restored {restoredBurnt} burnt tiles.");
+            }
+
+            // ── Active fires ──
+            if (fireEngine != null) {
+                if (gridSystem != null) fireEngine.SetGridSystem(gridSystem);
+
+                if (save.activeFires != null) {
                     foreach (var fireSave in save.activeFires) {
                         var tile = gridSystem.GetTileAt(fireSave.posX, fireSave.posY);
                         if (tile != null) {
@@ -304,9 +367,44 @@ namespace Core {
                 fireEngine.Resume();
             }
 
-            // Start the auto-save loop
+            // ── Active policies ──
+            if (PolicyManager.Instance != null && save.savedPolicies != null && gridSystem != null) {
+                // Find all available policy configs
+                var allPolicies = Resources.FindObjectsOfTypeAll<ScriptableObjects.PolicyConfig>();
+                foreach (var policySave in save.savedPolicies) {
+                    // Find the region
+                    Region targetRegion = null;
+                    foreach (var region in gridSystem.Regions) {
+                        if (region.RegionName == policySave.regionName) {
+                            targetRegion = region;
+                            break;
+                        }
+                    }
+                    if (targetRegion == null) continue;
+
+                    // Find the policy config
+                    foreach (var config in allPolicies) {
+                        if (config.PolicyName == policySave.policyName) {
+                            PolicyManager.Instance.AddPolicy(config, targetRegion);
+                            Debug.Log($"[GameManager] Restored policy '{policySave.policyName}' in '{policySave.regionName}'");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // ── Auto-save ──
             if (autoSaveController != null)
                 autoSaveController.Run();
+
+            // ── Update HUD ──
+            if (uiManager != null) {
+                int level = progressionManager != null ? progressionManager.CurrentLevel : 1;
+                uiManager.UpdateLevelDisplay(level);
+                uiManager.UpdateTimerDisplay(roundTimer);
+            }
+
+            Debug.Log($"[GameManager] Save restored — Round {currentRound}, Level {(progressionManager != null ? progressionManager.CurrentLevel : 1)}, Timer {roundTimer:F1}s");
         }
 
         /// <summary>
@@ -351,6 +449,35 @@ namespace Core {
                     dirY  = weatherSystem.GetNextWindDirection().y,
                     speed = weatherSystem.GetWindSpeed()
                 };
+            }
+
+            // Burnt tiles (not on fire, but IsBurnt = true)
+            if (gridSystem != null) {
+                for (int x = 0; x < gridSystem.Width; x++) {
+                    for (int y = 0; y < gridSystem.Height; y++) {
+                        var tile = gridSystem.GetTileAt(x, y);
+                        if (tile != null && tile.IsBurnt && !tile.IsOnFire) {
+                            data.burntTiles.Add(new SaveManager.BurntTileSave {
+                                posX = x,
+                                posY = y,
+                                moisture = tile.MoistureLevel
+                            });
+                        }
+                    }
+                }
+            }
+
+            // Active policies per region
+            if (PolicyManager.Instance != null && gridSystem != null) {
+                foreach (var region in gridSystem.Regions) {
+                    var policies = PolicyManager.Instance.GetActivePolicies(region);
+                    foreach (var policy in policies) {
+                        data.savedPolicies.Add(new SaveManager.PolicySave {
+                            regionName = region.RegionName,
+                            policyName = policy.PolicyName
+                        });
+                    }
+                }
             }
 
             // Resources

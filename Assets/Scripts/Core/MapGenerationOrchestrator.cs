@@ -56,6 +56,25 @@ namespace Core
                     cityGenerator.NumberOfCities = Presentation.StartPanelController.SelectedCityCount;
             }
 
+            // When loading a save, restore the seed so the same map generates
+            if (Presentation.MainMenuManager.ShouldLoadSave)
+            {
+                var sm = FindFirstObjectByType<Persistence.SaveManager>();
+                if (sm != null)
+                {
+                    var save = sm.LoadFile();
+                    if (save != null && save.randomSeed != 0)
+                    {
+                        seed = save.randomSeed;
+                        if (mapGenerator != null) {
+                            mapGenerator.mapWidth = save.mapWidth > 0 ? save.mapWidth : mapGenerator.mapWidth;
+                            mapGenerator.mapHeight = save.mapHeight > 0 ? save.mapHeight : mapGenerator.mapHeight;
+                        }
+                        Debug.Log($"[MapOrchestrator] Restored seed={seed}, size={save.mapWidth}x{save.mapHeight} from save.");
+                    }
+                }
+            }
+
             GenerateWorld();
         }
 

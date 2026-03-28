@@ -38,6 +38,11 @@ namespace BusinessLogic {
             return true;
         }
 
+        public void SetWind(Vector2 direction, float speed) {
+            currentWindDirection = direction;
+            windSpeed = speed;
+        }
+
         public void UpdateWeatherState() {
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
             windSpeed = Random.Range(0.3f, maxWindSpeed);

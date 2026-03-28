@@ -72,7 +72,11 @@ namespace Persistence
             // Fire simulation
             public List<FireTileSave> activeFires = new List<FireTileSave>();
 
+            // Burnt tiles (tiles that burned out but are no longer on fire)
+            public List<BurntTileSave> burntTiles = new List<BurntTileSave>();
+
             // Policies / unlocks
+            public List<PolicySave> savedPolicies = new List<PolicySave>();
             public List<string> activePolicies = new List<string>();
             public List<string> unlockedItems  = new List<string>();
 
@@ -120,6 +124,21 @@ namespace Persistence
             public bool  isDestroyed;
             public int   ticksBurning;
             public string tileType;
+        }
+
+        [Serializable]
+        public class BurntTileSave
+        {
+            public int posX;
+            public int posY;
+            public float moisture;
+        }
+
+        [Serializable]
+        public class PolicySave
+        {
+            public string regionName;
+            public string policyName;
         }
 
         [Serializable]

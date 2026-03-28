@@ -115,7 +115,7 @@ namespace BusinessLogic {
         }
 
         public void AddRoundBudget(int currentLevel) {
-            int rewardPerUnburnt = economyConfig != null ? economyConfig.RewardPerUnburntTile : 2;
+            float rewardPerUnburnt = economyConfig != null ? economyConfig.RewardPerUnburntTile : 2f;
 
             foreach (var city in managedCities) {
                 // Find all tiles in this city's region
@@ -131,7 +131,7 @@ namespace BusinessLogic {
                     }
                 }
 
-                int income = unburntTiles * rewardPerUnburnt;
+                int income = Mathf.RoundToInt(unburntTiles * rewardPerUnburnt);
 
                 // Apply registered modifiers (policies, bonuses, etc.)
                 foreach (var modifier in incomeModifiers) {

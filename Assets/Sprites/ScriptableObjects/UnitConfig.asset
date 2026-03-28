@@ -21,7 +21,7 @@ MonoBehaviour:
   standTopRight: {fileID: 7544868312529285259, guid: 1c639586e7434ae4bb9e2fba34014bfd, type: 3}
   standBottomLeft: {fileID: 4882648281671561556, guid: 740bd7a553c7aee44b2defae14a6c407, type: 3}
   standBottomRight: {fileID: -7312586129940635985, guid: 9ee8916607ea1134b83beeedccf933b2, type: 3}
-  maxTargets: 5
+  maxTargets: 4
   searchRadius: 10
   runTopLeft: {fileID: 1196484379175984568, guid: ca7b291ec9ea05e4b9111154899d5444, type: 3}
   runTopRight: {fileID: -7844367800473507557, guid: aab2412082dadd44eb27417b5c698e9c, type: 3}

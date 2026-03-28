@@ -14,7 +14,7 @@ namespace ScriptableObjects
 
         [Header("Round Rewards")]
         [Tooltip("Money awarded per unburnt tile in a city's region at the end of a round.")]
-        [SerializeField] private int rewardPerUnburntTile = 2;
+        [SerializeField] private float rewardPerUnburntTile = 2.0f;
 
         [Header("Deployment Costs")]
         [Tooltip("Base cost to deploy a firefighter")]
@@ -28,7 +28,7 @@ namespace ScriptableObjects
 
         public float BaseIncomePerSecond => baseIncomePerSecond;
         public float IncomeIncreasePerSecondPerLevel => incomeIncreasePerSecondPerLevel;
-        public int RewardPerUnburntTile => rewardPerUnburntTile;
+        public float RewardPerUnburntTile => rewardPerUnburntTile;
         public int BaseDeploymentCost => baseDeploymentCost;
         public int CostIncreasePerLevel => costIncreasePerLevel;
         public int InitialCityBudget => initialCityBudget;

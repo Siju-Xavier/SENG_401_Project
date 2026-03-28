@@ -1453,7 +1453,7 @@ MonoBehaviour:
   uiManager: {fileID: 1430331832}
   gameOverManager: {fileID: 0}
   playerId: 1
-  roundDuration: 30
+  roundDuration: 45
   fireIgnitionDelay: 5
 --- !u!1 &158487769
 GameObject:
@@ -3066,12 +3066,12 @@ MonoBehaviour:
     currentLevel: 0
     unlockedFeatures: []
   playerId: 1
-  minIgnitionRate: 0.1
+  minIgnitionRate: 0.2
   maxIgnitionRate: 5
-  minSpreadRate: 0.1
+  minSpreadRate: 0.15
   maxSpreadRate: 2
   referenceLevel: 100
-  baseRecoveryFraction: 0.3
+  baseRecoveryFraction: 0.5
 --- !u!1 &364354292
 GameObject:
   m_ObjectHideFlags: 0
@@ -9066,9 +9066,9 @@ MonoBehaviour:
   weatherSystem: {fileID: 1831033177}
   gridSystem: {fileID: 5533442}
   progressionManager: {fileID: 363285927}
-  windInfluence: 0.6
+  windInfluence: 1
   burnIntensityPerSecond: 0.1
-  burnoutThreshold: 2
+  burnoutThreshold: 1.2
   moistureDecayPerSecond: 0.05
   initialFireCount: 2
 --- !u!1 &1004617680
@@ -12113,7 +12113,6 @@ MonoBehaviour:
   settingsBtn: {fileID: 458460314}
   saveBtn: {fileID: 281486432}
   mainMenuBtn: {fileID: 540616899}
-  logoutBtn: {fileID: 0}
   quitBtn: {fileID: 0}
   settingsPanel: {fileID: 1234047033}
   closeSettingsBtn: {fileID: 1615598395}

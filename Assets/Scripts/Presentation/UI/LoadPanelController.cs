@@ -83,10 +83,21 @@ namespace Presentation
         private void OnLoadLocalSlot(string filePath)
         {
             Debug.Log($"[LoadPanel] Loading local slot: {filePath}");
+            Debug.Log($"[LoadPanel] File exists: {System.IO.File.Exists(filePath)}");
+
+            string json = LocalFileProvider.LoadSlot(filePath);
+            if (string.IsNullOrEmpty(json))
+            {
+                Debug.LogWarning($"[LoadPanel] File is empty or unreadable: {filePath}");
+                return;
+            }
+
+            Debug.Log($"[LoadPanel] JSON length: {json.Length}, preview: {json.Substring(0, Mathf.Min(200, json.Length))}");
+
             var sm = FindFirstObjectByType<SaveManager>();
             if (sm != null)
             {
-                var data = sm.LoadLocalSlot(filePath);
+                var data = sm.Deserialize(json);
                 if (data != null)
                 {
                     SaveManager.PendingLoadData = data;
@@ -94,8 +105,12 @@ namespace Presentation
                     SceneLoader.LoadScene("Game 1");
                     return;
                 }
+                Debug.LogWarning("[LoadPanel] Deserialize returned null.");
             }
-            Debug.LogWarning("[LoadPanel] Failed to load local slot.");
+            else
+            {
+                Debug.LogWarning("[LoadPanel] SaveManager not found.");
+            }
         }
 
         private void OnLoadLocal()
@@ -246,20 +261,35 @@ namespace Presentation
 
         private void OnLoadCloud(string gameStateJson)
         {
-            Debug.Log("[LoadPanel] Loading cloud save...");
-            var sm = FindFirstObjectByType<SaveManager>();
-            if (sm != null && !string.IsNullOrEmpty(gameStateJson))
+            Debug.Log($"[LoadPanel] Loading cloud save... JSON length: {gameStateJson?.Length ?? 0}");
+            if (string.IsNullOrEmpty(gameStateJson))
             {
-                var data = sm.Deserialize(gameStateJson);
-                if (data != null)
+                Debug.LogWarning("[LoadPanel] Cloud save game_state is empty.");
+                return;
+            }
+
+            Debug.Log($"[LoadPanel] Cloud JSON preview: {gameStateJson.Substring(0, Mathf.Min(200, gameStateJson.Length))}");
+
+            var sm = FindFirstObjectByType<SaveManager>();
+            if (sm != null)
+            {
+                try
                 {
-                    SaveManager.PendingLoadData = data;
-                    MainMenuManager.ShouldLoadSave = true;
-                    SceneLoader.LoadScene("Game 1");
-                    return;
+                    var data = sm.Deserialize(gameStateJson);
+                    if (data != null)
+                    {
+                        SaveManager.PendingLoadData = data;
+                        MainMenuManager.ShouldLoadSave = true;
+                        SceneLoader.LoadScene("Game 1");
+                        return;
+                    }
+                    Debug.LogWarning("[LoadPanel] Cloud deserialize returned null.");
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[LoadPanel] Cloud deserialize error: {e.Message}");
                 }
             }
-            Debug.LogWarning("[LoadPanel] Failed to load cloud save.");
         }
 
         // ── UI Helpers ──────────────────────────────────────────────────

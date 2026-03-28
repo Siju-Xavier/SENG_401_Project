@@ -67,9 +67,10 @@ namespace Presentation
                 if (template.GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
                     template.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
 
-                // Flip the dropdown to expand upward instead of downward
-                // by changing the pivot to bottom and anchoring to top of the dropdown
-                template.pivot = new Vector2(0.5f, 0f);
+                // Make the template tall enough to show all items without scrolling
+                // Each item is ~30px, so 3 items + padding = ~120px
+                var sd = template.sizeDelta;
+                if (sd.y < 120f) template.sizeDelta = new Vector2(sd.x, 120f);
             }
         }
 

@@ -15,7 +15,6 @@ namespace Presentation
         [SerializeField] private Button settingsBtn;
         [SerializeField] private Button saveBtn;
         [SerializeField] private Button mainMenuBtn;
-        [SerializeField] private Button logoutBtn;
         [SerializeField] private Button quitBtn;
 
         [Header("Settings Panel")]
@@ -50,8 +49,6 @@ namespace Presentation
                 if (settingsBtn == null) settingsBtn = FindButton(pausePanel, "SettingsButton");
                 if (saveBtn == null) saveBtn = FindButton(pausePanel, "SaveButton");
                 if (mainMenuBtn == null) mainMenuBtn = FindButton(pausePanel, "MainMenuButton");
-                if (logoutBtn == null) logoutBtn = FindButton(pausePanel, "LogoutButton")
-                                                ?? FindButton(pausePanel, "LogOutButton");
                 if (quitBtn == null) quitBtn = FindButton(pausePanel, "QuitButton")
                                             ?? FindButton(pausePanel, "ExitButton");
             }
@@ -70,7 +67,6 @@ namespace Presentation
             if (settingsBtn != null) settingsBtn.onClick.AddListener(OpenSettings);
             if (saveBtn != null) saveBtn.onClick.AddListener(OpenSavePanel);
             if (mainMenuBtn != null) mainMenuBtn.onClick.AddListener(GoToMainMenu);
-            if (logoutBtn != null) logoutBtn.onClick.AddListener(Logout);
             if (quitBtn != null) quitBtn.onClick.AddListener(QuitGame);
             if (closeSettingsBtn != null) closeSettingsBtn.onClick.AddListener(CloseSettings);
             if (closeSaveBtn != null) closeSaveBtn.onClick.AddListener(CloseSavePanel);
@@ -165,18 +161,14 @@ namespace Presentation
             SceneLoader.LoadScene("MainMenu");
         }
 
-        public void Logout()
-        {
-            Debug.Log("[PauseMenu] Logout — returning to Login scene.");
-            Time.timeScale = 1f;
-            SceneLoader.LoadScene("Login");
-        }
-
         public void QuitGame()
         {
-            // From in-game, "Quit" means go back to Login (logout)
-            // Application.Quit only happens from Login scene
-            Logout();
+            Debug.Log("[PauseMenu] Quit requested.");
+            #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+            #else
+            Application.Quit();
+            #endif
         }
 
         private void SetPaused(bool paused)

@@ -14,10 +14,20 @@ namespace Presentation
         [SerializeField] private PolicyConfig policy2;
         [SerializeField] private PolicyConfig policy3;
 
-        [Header("Policy Buttons (replace SendFirefighter & PolicyButton)")]
+        [Header("Policy Buttons")]
         [SerializeField] private Button button1;
         [SerializeField] private Button button2;
         [SerializeField] private Button button3;
+
+        [Header("Policy Button Fronts (Image on the Front child)")]
+        [SerializeField] private Image buttonFront1;
+        [SerializeField] private Image buttonFront2;
+        [SerializeField] private Image buttonFront3;
+
+        [Header("Policy Button Texts (TMP on the Front child)")]
+        [SerializeField] private TextMeshProUGUI buttonText1;
+        [SerializeField] private TextMeshProUGUI buttonText2;
+        [SerializeField] private TextMeshProUGUI buttonText3;
 
         [Header("Info Texts")]
         [SerializeField] private TextMeshProUGUI titleText;
@@ -36,7 +46,7 @@ namespace Presentation
 
         private static readonly Color ACTIVE_COLOR = new Color(0.2f, 0.7f, 0.2f, 1f);
         private static readonly Color INACTIVE_COLOR = new Color(0.8f, 0.25f, 0.25f, 1f);
-        private static readonly Color DISABLED_COLOR = new Color(0.3f, 0.3f, 0.3f, 0.5f);
+        private static readonly Color DISABLED_COLOR = new Color(0.3f, 0.3f, 0.3f, 1.0f);
 
         private bool listenersWired;
 
@@ -149,15 +159,15 @@ namespace Presentation
             }
 
             // Update buttons
-            UpdateButton(button1, policy1, cityCount, "Button1");
-            UpdateButton(button2, policy2, cityCount, "Button2");
-            UpdateButton(button3, policy3, cityCount, "Button3");
+            UpdateButton(button1, buttonFront1, buttonText1, policy1, cityCount, "Button1");
+            UpdateButton(button2, buttonFront2, buttonText2, policy2, cityCount, "Button2");
+            UpdateButton(button3, buttonFront3, buttonText3, policy3, cityCount, "Button3");
             _loggedOnce = true;
         }
 
         private bool _loggedOnce;
 
-        private void UpdateButton(Button btn, PolicyConfig policy, int cityCount, string label)
+        private void UpdateButton(Button btn, Image frontImg, TextMeshProUGUI txt, PolicyConfig policy, int cityCount, string label)
         {
             if (btn == null || policy == null)
             {
@@ -176,9 +186,6 @@ namespace Presentation
             if (!_loggedOnce)
                 Debug.Log($"[PolicyPanel] {label}: policy={policy.PolicyName}, level={level}, reqLvl={policy.RequiredLevel}, levelTooLow={levelTooLow}, needsMoreCities={needsMoreCities}, isDisabled={isDisabled}, isActive={isActive}");
 
-            var img = btn.GetComponent<Image>();
-            var txt = btn.GetComponentInChildren<TextMeshProUGUI>();
-
             // Cost + level string
             string lvlTag = levelTooLow ? $" | Lvl {policy.RequiredLevel}" : "";
             string costLine;
@@ -192,7 +199,7 @@ namespace Presentation
             if (isDisabled)
             {
                 btn.interactable = false;
-                if (img != null) img.color = DISABLED_COLOR;
+                if (frontImg != null) frontImg.color = DISABLED_COLOR;
                 string reason = levelTooLow
                     ? $"(Requires Lvl {policy.RequiredLevel})"
                     : "(Requires 2+ cities)";
@@ -201,13 +208,13 @@ namespace Presentation
             else if (isActive)
             {
                 btn.interactable = true;
-                if (img != null) img.color = ACTIVE_COLOR;
+                if (frontImg != null) frontImg.color = ACTIVE_COLOR;
                 if (txt != null) txt.text = $"{policy.PolicyName}\n<size=11>{costLine} (click to deactivate)</size>";
             }
             else
             {
                 btn.interactable = true;
-                if (img != null) img.color = INACTIVE_COLOR;
+                if (frontImg != null) frontImg.color = INACTIVE_COLOR;
                 if (txt != null) txt.text = $"{policy.PolicyName}\n<size=11>{costLine} (click to activate)</size>";
             }
         }

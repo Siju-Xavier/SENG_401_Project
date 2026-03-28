@@ -153,6 +153,7 @@ namespace Presentation
 
             alertText.text = message;
             alertBanner.SetActive(true);
+            alertBanner.transform.SetAsLastSibling();
             float dur = duration > 0f ? duration : alertDuration;
             _alertCoroutine = StartCoroutine(HideAlertAfterDelay(dur));
         }
@@ -163,9 +164,19 @@ namespace Presentation
             if (alertBanner != null) alertBanner.SetActive(false);
         }
 
+        private Canvas FindGameCanvas()
+        {
+            // Prefer CityCanvas (the main game HUD canvas)
+            var go = GameObject.Find("CityCanvas");
+            if (go != null) { var c = go.GetComponent<Canvas>(); if (c != null) return c; }
+            go = GameObject.Find("Canvas");
+            if (go != null) { var c = go.GetComponent<Canvas>(); if (c != null) return c; }
+            return FindFirstObjectByType<Canvas>();
+        }
+
         private void CreateAlertBanner()
         {
-            var canvas = FindFirstObjectByType<Canvas>();
+            var canvas = FindGameCanvas();
             if (canvas == null) return;
 
             // Banner background — anchored to top-center
@@ -258,8 +269,7 @@ namespace Presentation
         /// <summary>Creates a simple game over panel at runtime when not assigned in Inspector.</summary>
         private void CreateGameOverPanel()
         {
-            // Find or create a canvas
-            var canvas = FindFirstObjectByType<Canvas>();
+            var canvas = FindGameCanvas();
             if (canvas == null) return;
 
             // Dark overlay

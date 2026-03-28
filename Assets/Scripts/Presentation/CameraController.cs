@@ -45,14 +45,7 @@ namespace Presentation
             // Scale move speed proportionally to zoom so panning feels consistent
             float zoomFactor = cam != null ? cam.orthographicSize / ((minZoom + maxZoom) * 0.5f) : 1f;
             Vector3 move = new Vector3(input.x, input.y, 0f) * (moveSpeed * zoomFactor * Time.deltaTime);
-            Vector3 pos = transform.position + move;
-
-            // Snap to pixel grid to prevent tile edge flickering
-            const float ppu = 32f;
-            pos.x = Mathf.Round(pos.x * ppu) / ppu;
-            pos.y = Mathf.Round(pos.y * ppu) / ppu;
-
-            transform.position = pos;
+            transform.position += move;
         }
 
         private void HandleZoom()
@@ -63,7 +56,7 @@ namespace Presentation
             float scroll = mouse.scroll.ReadValue().y;
             if (Mathf.Approximately(scroll, 0f)) return;
 
-            float newSize = cam.orthographicSize - scroll * zoomSpeed * Time.unscaledDeltaTime;
+            float newSize = cam.orthographicSize - Mathf.Sign(scroll) * zoomSpeed * 0.5f;
             cam.orthographicSize = Mathf.Clamp(newSize, minZoom, maxZoom);
         }
     }

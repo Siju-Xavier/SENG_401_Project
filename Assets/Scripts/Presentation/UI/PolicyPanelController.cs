@@ -63,10 +63,10 @@ namespace Presentation
                 }
             }
 
-#if UNITY_EDITOR
-            if (economyConfig == null)
-                economyConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<EconomyConfig>("Assets/Sprites/ScriptableObjects/EconomyConfig.asset");
-#endif
+            #if UNITY_EDITOR
+                        if (economyConfig == null)
+                            economyConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<EconomyConfig>("Assets/Sprites/ScriptableObjects/EconomyConfig.asset");
+            #endif
         }
 
         private void WireListeners()
@@ -180,13 +180,14 @@ namespace Presentation
             var txt = btn.GetComponentInChildren<TextMeshProUGUI>();
 
             // Cost + level string
+            string lvlTag = levelTooLow ? $" | Lvl {policy.RequiredLevel}" : "";
             string costLine;
             if (policy.CostPerSecond > 0)
-                costLine = $"Cost: ${policy.CostPerSecond:F1}/sec | Lvl {policy.RequiredLevel}";
+                costLine = $"Cost: ${policy.CostPerSecond:F1}/sec{lvlTag}";
             else if (policy.IncomeRedistributionRate > 0)
-                costLine = $"Gives {policy.IncomeRedistributionRate * 100:F0}% income | Lvl {policy.RequiredLevel}";
+                costLine = $"Gives {policy.IncomeRedistributionRate * 100:F0}% income{lvlTag}";
             else
-                costLine = $"Free | Lvl {policy.RequiredLevel}";
+                costLine = $"Free{lvlTag}";
 
             if (isDisabled)
             {
@@ -195,19 +196,19 @@ namespace Presentation
                 string reason = levelTooLow
                     ? $"(Requires Lvl {policy.RequiredLevel})"
                     : "(Requires 2+ cities)";
-                if (txt != null) txt.text = $"{policy.PolicyName}\n<size=12>{reason}</size>";
+                if (txt != null) txt.text = $"{policy.PolicyName}\n<size=11>{reason}</size>";
             }
             else if (isActive)
             {
                 btn.interactable = true;
                 if (img != null) img.color = ACTIVE_COLOR;
-                if (txt != null) txt.text = $"[ON] {policy.PolicyName}\n<size=12>ACTIVE - {costLine} (click to deactivate)</size>";
+                if (txt != null) txt.text = $"{policy.PolicyName}\n<size=11>{costLine} (click to deactivate)</size>";
             }
             else
             {
                 btn.interactable = true;
                 if (img != null) img.color = INACTIVE_COLOR;
-                if (txt != null) txt.text = $"{policy.PolicyName}\n<size=12>{costLine} (click to activate)</size>";
+                if (txt != null) txt.text = $"{policy.PolicyName}\n<size=11>{costLine} (click to activate)</size>";
             }
         }
 

@@ -5563,7 +5563,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &601584876
 RectTransform:
   m_ObjectHideFlags: 0
@@ -12113,6 +12113,8 @@ MonoBehaviour:
   settingsBtn: {fileID: 458460314}
   saveBtn: {fileID: 281486432}
   mainMenuBtn: {fileID: 540616899}
+  logoutBtn: {fileID: 0}
+  quitBtn: {fileID: 0}
   settingsPanel: {fileID: 1234047033}
   closeSettingsBtn: {fileID: 1615598395}
   savePanel: {fileID: 1188024206}

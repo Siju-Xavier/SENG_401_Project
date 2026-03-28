@@ -62,11 +62,11 @@ namespace Presentation
         public void QuitGame()
         {
             Debug.Log("[MainMenu] Quit called.");
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
-#endif
+            #if UNITY_EDITOR
+                        UnityEditor.EditorApplication.isPlaying = false;
+            #else
+                        Application.Quit();
+            #endif
         }
 
         // ── Helpers ──────────────────────────────────────────────────────

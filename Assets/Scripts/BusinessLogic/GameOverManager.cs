@@ -10,6 +10,7 @@
 // ============================================================================
 
 namespace BusinessLogic {
+    using System.Collections;
     using System.Collections.Generic;
     using GameState;
     using Core;
@@ -29,6 +30,10 @@ namespace BusinessLogic {
         [Tooltip("Seconds between city health checks (performance optimization).")]
         [SerializeField] private float checkInterval = 0.5f;
 
+        [Header("Game Over")]
+        [Tooltip("Seconds to wait after last city falls before showing game over panel.")]
+        [SerializeField] private float gameOverDelay = 2f;
+
         // ── Runtime state ────────────────────────────────────────────────
 
         private GridSystem gridSystem;
@@ -42,6 +47,9 @@ namespace BusinessLogic {
         private HashSet<City> dangerAlertedCities = new HashSet<City>();
         private HashSet<City> criticalAlertedCities = new HashSet<City>();
 
+        // Track destruction order for game over summary
+        private List<CityDestructionRecord> destructionLog = new List<CityDestructionRecord>();
+
         private int totalCityCount;
 
         public enum CityHealthStatus { Safe, Danger, Critical, Destroyed }
@@ -54,11 +62,17 @@ namespace BusinessLogic {
             public float DamageRatio; // 0-1, fraction of footprint burnt/on fire
         }
 
+        public class CityDestructionRecord {
+            public string CityName;
+            public int Level;
+        }
+
         // ── Public API ──────────────────────────────────────────────────
 
         public bool IsGameOver => gameOver;
         public int DestroyedCityCount => destroyedCities.Count;
         public int TotalCityCount => totalCityCount;
+        public List<CityDestructionRecord> DestructionLog => destructionLog;
 
         public void SetGridSystem(GridSystem grid) {
             gridSystem = grid;
@@ -158,26 +172,26 @@ namespace BusinessLogic {
                     continue;
                 }
 
-                // Check danger/critical thresholds
+                // Check thresholds — only fire the highest applicable alert per tick
                 if (state.DamageRatio >= criticalThreshold && !criticalAlertedCities.Contains(city)) {
-                    state.Status = CityHealthStatus.Critical;
+                    // Mark danger as alerted too (so it doesn't fire later)
+                    dangerAlertedCities.Add(city);
                     criticalAlertedCities.Add(city);
+                    state.Status = CityHealthStatus.Critical;
                     EventBroker.Instance.Publish(Core.EventType.CityCritical, city);
                     Debug.Log($"[GameOver] {city.CityName} is CRITICAL! ({state.DamageRatio:P0} damaged)");
                 }
                 else if (state.DamageRatio >= dangerThreshold && !dangerAlertedCities.Contains(city)) {
-                    state.Status = CityHealthStatus.Danger;
                     dangerAlertedCities.Add(city);
+                    state.Status = CityHealthStatus.Danger;
                     EventBroker.Instance.Publish(Core.EventType.CityInDanger, city);
                     Debug.Log($"[GameOver] {city.CityName} is in DANGER! ({state.DamageRatio:P0} damaged)");
                 }
-                else if (state.DamageRatio < dangerThreshold) {
+                else if (state.DamageRatio < dangerThreshold && dangerAlertedCities.Contains(city)) {
                     // City recovered — reset alerts
-                    if (dangerAlertedCities.Contains(city)) {
-                        dangerAlertedCities.Remove(city);
-                        criticalAlertedCities.Remove(city);
-                        state.Status = CityHealthStatus.Safe;
-                    }
+                    dangerAlertedCities.Remove(city);
+                    criticalAlertedCities.Remove(city);
+                    state.Status = CityHealthStatus.Safe;
                 }
             }
         }
@@ -185,6 +199,13 @@ namespace BusinessLogic {
         private void OnCityDestroyed(City city, CityHealthState state) {
             state.Status = CityHealthStatus.Destroyed;
             destroyedCities.Add(city);
+
+            // Log destruction for game over summary
+            var pm = FindFirstObjectByType<ProgressionManager>();
+            destructionLog.Add(new CityDestructionRecord {
+                CityName = city.CityName,
+                Level = pm != null ? pm.CurrentLevel : 1
+            });
 
             Debug.Log($"[GameOver] {city.CityName} has been DESTROYED!");
             EventBroker.Instance.Publish(Core.EventType.CityDestroyed, city);
@@ -194,7 +215,7 @@ namespace BusinessLogic {
 
             // Check if ALL cities are destroyed
             if (destroyedCities.Count >= totalCityCount) {
-                TriggerGameOver();
+                StartCoroutine(DelayedGameOver());
             }
         }
 
@@ -219,23 +240,23 @@ namespace BusinessLogic {
 
             // Also extinguish any active fires in the region so fire VFX are removed
             if (fireEngine != null) {
-                // GetBurningTiles returns a copy, safe to iterate while modifying
                 var burning = fireEngine.GetBurningTiles();
                 foreach (var tile in burning) {
                     if (tile.Region != region) continue;
-                    // ExtinguishTile publishes FireExtinguished which tells TileRenderer to remove VFX
-                    fireEngine.ExtinguishTile(tile);
-                    // Mark as burnt after extinguishing (ExtinguishTile clears IsOnFire)
-                    tile.IsBurnt = true;
+                    // ScorchTile sets IsBurnt=true BEFORE publishing, avoiding double events
+                    fireEngine.ScorchTile(tile);
+                    scorched++;
                 }
             }
 
             Debug.Log($"[GameOver] Scorched {scorched} tiles in {region.RegionName}'s territory.");
         }
 
-        private void TriggerGameOver() {
-            gameOver = true;
-            Debug.Log("[GameOver] ALL CITIES DESTROYED — GAME OVER!");
+        private IEnumerator DelayedGameOver() {
+            gameOver = true; // Stop health checks immediately
+            Debug.Log($"[GameOver] ALL CITIES DESTROYED — showing game over in {gameOverDelay}s...");
+            yield return new WaitForSeconds(gameOverDelay);
+            Debug.Log("[GameOver] GAME OVER!");
             EventBroker.Instance.Publish(Core.EventType.GameEnded, null);
         }
     }

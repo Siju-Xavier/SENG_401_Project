@@ -35,6 +35,7 @@ namespace Presentation
 
         [Header("Alert Settings")]
         [SerializeField] private float alertDuration = 3f;
+        [SerializeField] private float destructionAlertDuration = 5f;
 
         [Header("Managers")]
         [SerializeField] private BusinessLogic.ProgressionManager progressionManager;
@@ -138,14 +139,13 @@ namespace Presentation
         /// Shows a temporary alert banner with the given message.
         /// Auto-hides after <see cref="alertDuration"/> seconds.
         /// </summary>
-        public void ShowAlert(string message)
+        public void ShowAlert(string message, float duration = -1f)
         {
+            // Auto-create alert banner if not wired in Inspector
             if (alertBanner == null || alertText == null)
-            {
-                // Fallback: log prominently so alerts are visible in console
-                Debug.LogWarning($"[ALERT] {message}");
-                return;
-            }
+                CreateAlertBanner();
+
+            if (alertBanner == null || alertText == null) return;
 
             // Cancel any currently running alert timer
             if (_alertCoroutine != null)
@@ -153,13 +153,48 @@ namespace Presentation
 
             alertText.text = message;
             alertBanner.SetActive(true);
-            _alertCoroutine = StartCoroutine(HideAlertAfterDelay());
+            float dur = duration > 0f ? duration : alertDuration;
+            _alertCoroutine = StartCoroutine(HideAlertAfterDelay(dur));
         }
 
-        private IEnumerator HideAlertAfterDelay()
+        private IEnumerator HideAlertAfterDelay(float duration)
         {
-            yield return new WaitForSecondsRealtime(alertDuration);
+            yield return new WaitForSecondsRealtime(duration);
             if (alertBanner != null) alertBanner.SetActive(false);
+        }
+
+        private void CreateAlertBanner()
+        {
+            var canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null) return;
+
+            // Banner background — anchored to top-center
+            alertBanner = new GameObject("AlertBanner");
+            alertBanner.transform.SetParent(canvas.transform, false);
+            var rt = alertBanner.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.2f, 0.85f);
+            rt.anchorMax = new Vector2(0.8f, 0.95f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            var bg = alertBanner.AddComponent<UnityEngine.UI.Image>();
+            bg.color = new Color(0.85f, 0.15f, 0.1f, 0.9f);
+
+            // Alert text
+            var textGO = new GameObject("AlertText");
+            textGO.transform.SetParent(alertBanner.transform, false);
+            var textRT = textGO.AddComponent<RectTransform>();
+            textRT.anchorMin = Vector2.zero;
+            textRT.anchorMax = Vector2.one;
+            textRT.offsetMin = new Vector2(10f, 0f);
+            textRT.offsetMax = new Vector2(-10f, 0f);
+            alertText = textGO.AddComponent<TextMeshProUGUI>();
+            alertText.alignment = TMPro.TextAlignmentOptions.Center;
+            alertText.fontSize = 22;
+            alertText.color = Color.white;
+            alertText.fontStyle = TMPro.FontStyles.Bold;
+
+            alertBanner.SetActive(false);
         }
 
         // ── City Danger / Destruction Alerts ─────────────────────────────────
@@ -179,7 +214,7 @@ namespace Presentation
         private void OnCityDestroyed(object data)
         {
             if (data is GameState.City city)
-                ShowAlert($"{city.CityName} has been lost to the fire.");
+                ShowAlert($"{city.CityName} has been lost to the fire.", destructionAlertDuration);
         }
 
         // ── Game Over ───────────────────────────────────────────────────────
@@ -187,6 +222,10 @@ namespace Presentation
         /// <summary>Show the game over panel with final stats.</summary>
         public void ShowGameOver(int roundReached, int levelReached)
         {
+            // Hide the alert banner so it doesn't sit on top of the game over panel
+            if (_alertCoroutine != null) StopCoroutine(_alertCoroutine);
+            if (alertBanner != null) alertBanner.SetActive(false);
+
             // Create panel at runtime if not wired in Inspector
             if (gameOverPanel == null)
                 CreateGameOverPanel();
@@ -194,12 +233,23 @@ namespace Presentation
             if (gameOverPanel != null)
             {
                 gameOverPanel.SetActive(true);
+                // Ensure game over panel renders on top of everything
+                gameOverPanel.transform.SetAsLastSibling();
 
                 if (gameOverStatsText != null)
                 {
+                    // Build destruction summary
+                    var gom = FindFirstObjectByType<BusinessLogic.GameOverManager>();
+                    string cityList = "";
+                    if (gom != null && gom.DestructionLog.Count > 0) {
+                        foreach (var record in gom.DestructionLog) {
+                            cityList += $"\n  {record.CityName} — fell at Level {record.Level}";
+                        }
+                    }
+
                     gameOverStatsText.text =
-                        $"All cities have fallen.\n\n" +
-                        $"Round Reached: {roundReached}\n" +
+                        $"All cities have fallen.\n" +
+                        cityList + "\n\n" +
                         $"Level Reached: {levelReached}";
                 }
             }
@@ -275,14 +325,20 @@ namespace Presentation
             tmp.color = Color.white;
         }
 
+        private bool sceneLoadRequested;
+
         private void OnMainMenuClicked()
         {
+            if (sceneLoadRequested) return;
+            sceneLoadRequested = true;
             Time.timeScale = 1f;
             SceneLoader.LoadScene("MainMenu");
         }
 
         private void OnRetryClicked()
         {
+            if (sceneLoadRequested) return;
+            sceneLoadRequested = true;
             Time.timeScale = 1f;
             SceneLoader.LoadScene("Game 1");
         }

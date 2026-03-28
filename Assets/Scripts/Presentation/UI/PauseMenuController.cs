@@ -25,9 +25,11 @@ namespace Presentation
         [SerializeField] private Button closeSaveBtn;
 
         private bool isPaused;
+        private BusinessLogic.GameOverManager gameOverManager;
 
         private void Start()
         {
+            gameOverManager = FindFirstObjectByType<BusinessLogic.GameOverManager>();
             var canvas = GameObject.Find("CityCanvas") ?? GameObject.Find("Canvas");
             if (canvas != null)
             {
@@ -83,6 +85,9 @@ namespace Presentation
 
         private void TogglePause()
         {
+            // Don't allow pause toggle when game is over
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
+
             // If a sub-panel is open, close it back to pause panel
             if (settingsPanel != null && settingsPanel.activeSelf)
             {
@@ -101,6 +106,9 @@ namespace Presentation
 
         public void PauseGame()
         {
+            // Don't allow pausing when game is over
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
+
             SetPaused(true);
             var gm = FindFirstObjectByType<GameManager>();
             if (gm != null) gm.PauseGame();

@@ -29,7 +29,17 @@ namespace BusinessLogic {
             if (Instance == this) Instance = null;
         }
 
+        private GameOverManager _gameOverManager;
+        private GameOverManager GameOverManagerRef {
+            get {
+                if (_gameOverManager == null) _gameOverManager = FindFirstObjectByType<GameOverManager>();
+                return _gameOverManager;
+            }
+        }
+
         private void Update() {
+            if (GameOverManagerRef != null && GameOverManagerRef.IsGameOver) return;
+
             // Deduct per-second costs for active policies
             var regionsToClean = new List<Region>();
 

@@ -62,6 +62,7 @@ namespace Presentation
             resourceManager = FindFirstObjectByType<ResourceManager>();
             progressionManager = FindFirstObjectByType<ProgressionManager>();
             gameOverManager = FindFirstObjectByType<GameOverManager>();
+            Core.EventBroker.Instance.Subscribe(Core.EventType.CityDestroyed, OnCityDestroyed);
 #if UNITY_EDITOR
             if (economyConfig == null) {
                 economyConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<ScriptableObjects.EconomyConfig>("Assets/Sprites/ScriptableObjects/EconomyConfig.asset");
@@ -69,8 +70,21 @@ namespace Presentation
 #endif
         }
 
+        private void OnDestroy()
+        {
+            Core.EventBroker.Instance.Unsubscribe(Core.EventType.CityDestroyed, OnCityDestroyed);
+        }
+
+        private void OnCityDestroyed(object data)
+        {
+            // If the destroyed city is the one we're viewing, close the panel
+            if (data is City city && city == currentCity)
+                HidePanel();
+        }
+
         private void Update()
         {
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
             if (currentCity != null && panelRoot != null && panelRoot.activeSelf) {
                 UpdateStatsText();
             }

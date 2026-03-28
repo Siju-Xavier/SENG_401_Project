@@ -21,6 +21,7 @@ namespace Presentation
         private int tilesExtinguished;
         private GridSystem gridSystem;
         private UnityEngine.Tilemaps.Tilemap groundTilemap;
+        private GameOverManager gameOverManager;
 
         public UnitState State => state;
 
@@ -37,6 +38,7 @@ namespace Presentation
             tilesExtinguished = 0;
             gridSystem = grid;
             groundTilemap = tilemap ?? Object.FindFirstObjectByType<UnityEngine.Tilemaps.Tilemap>();
+            gameOverManager = Object.FindFirstObjectByType<GameOverManager>();
 
             mover = GetComponent<SpriteMover>();
             spriteRenderer = GetComponent<SpriteRenderer>();
@@ -71,6 +73,15 @@ namespace Presentation
 
         private void Update()
         {
+            // Stop all activity when game is over — head home
+            if (gameOverManager != null && gameOverManager.IsGameOver) {
+                if (state != UnitState.Returning && state != UnitState.Idle) {
+                    TileAssignmentManager.Instance?.Unassign(targetTile);
+                    ReturnHome();
+                }
+                return;
+            }
+
             // During EnRoute: check if target fire went out
             if (state == UnitState.EnRoute && targetTile != null && !targetTile.IsOnFire)
             {

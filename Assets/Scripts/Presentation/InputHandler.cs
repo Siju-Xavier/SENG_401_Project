@@ -10,6 +10,7 @@ namespace Presentation
         [SerializeField] private Camera mainCamera;
 
         private ResourceManager resourceManager;
+        private GameOverManager gameOverManager;
         private GridSystem gridSystem;
 
         private void Start()
@@ -21,6 +22,7 @@ namespace Presentation
                 groundTilemap = GameObject.FindObjectOfType<UnityEngine.Tilemaps.Tilemap>();
 
             resourceManager = FindFirstObjectByType<ResourceManager>();
+            gameOverManager = FindFirstObjectByType<GameOverManager>();
         }
 
         public void SetGridSystem(GridSystem grid)
@@ -38,8 +40,11 @@ namespace Presentation
 
         private void HandleClick()
         {
-            if (UnityEngine.EventSystems.EventSystem.current != null && 
-                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) 
+            // Block all map interaction when game is over
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
+
+            if (UnityEngine.EventSystems.EventSystem.current != null &&
+                UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
             {
                 return; // Ignore clicks on the map if we're clicking on the UI
             }

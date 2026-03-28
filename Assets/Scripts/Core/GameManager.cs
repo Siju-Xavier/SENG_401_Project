@@ -128,6 +128,12 @@ namespace Core {
         private void Update() {
             if (!roundActive) return;
 
+            // Stop rounds if game is over (during the delay before panel shows)
+            if (gameOverManager != null && gameOverManager.IsGameOver) {
+                roundActive = false;
+                return;
+            }
+
             roundTimer -= Time.deltaTime;
             if (uiManager != null) uiManager.UpdateTimerDisplay(roundTimer);
 
@@ -209,10 +215,17 @@ namespace Core {
             // Stop fire simulation
             if (fireEngine != null) fireEngine.Pause();
 
+            // Stop auto-save loop
+            if (autoSaveController != null) autoSaveController.Stop();
+
             // Final save via the active IStorageProvider (local or cloud)
             if (saveManager != null) {
                 saveManager.SaveFile();
             }
+
+            // Close any open city panel
+            if (CityPanelController.Instance != null)
+                CityPanelController.Instance.HidePanel();
 
             // Show game over UI
             if (uiManager != null) {

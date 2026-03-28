@@ -298,6 +298,25 @@ namespace BusinessLogic {
         }
 
         /// <summary>
+        /// Force-scorch a burning tile: removes from tracking, marks as burnt,
+        /// and publishes a single FireExtinguished event with IsBurnt already true.
+        /// Used by GameOverManager.ScorchTerritory() to avoid double-publish.
+        /// </summary>
+        public void ScorchTile(Tile tile) {
+            if (tile == null) return;
+
+            tile.IsOnFire = false;
+            tile.FireIntensity = 0f;
+            tile.IsBurnt = true;
+            tile.MoistureLevel = 0f;
+
+            burningTiles.Remove(tile);
+            spreadAccumulators.Remove(tile);
+
+            EventBroker.Instance.Publish(Core.EventType.FireExtinguished, tile);
+        }
+
+        /// <summary>
         /// Ignite a number of random non-water tiles to kick off the game.
         /// Called by GameManager.StartGame().
         /// </summary>

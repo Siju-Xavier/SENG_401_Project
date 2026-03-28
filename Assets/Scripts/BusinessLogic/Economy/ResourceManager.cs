@@ -11,6 +11,7 @@ namespace BusinessLogic {
         [SerializeField] private EconomyConfig economyConfig;
 
         private FireEngine fireEngine;
+        private GameOverManager gameOverManager;
         private GridSystem gridSystem;
         private UnityEngine.Tilemaps.Tilemap groundTilemap;
         private List<City> managedCities = new List<City>();
@@ -34,6 +35,7 @@ namespace BusinessLogic {
             }
 #endif
             fireEngine = FindFirstObjectByType<FireEngine>();
+            gameOverManager = FindFirstObjectByType<GameOverManager>();
             groundTilemap = FindFirstObjectByType<UnityEngine.Tilemaps.Tilemap>();
             gameManager = FindFirstObjectByType<GameManager>();
         }
@@ -59,6 +61,7 @@ namespace BusinessLogic {
 
         private void Update() {
             if (activeUnits == null) return;
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
             if (gameManager == null || !gameManager.IsRoundActive) return;
 
             int currentLevel = GetCurrentLevel();
@@ -148,6 +151,7 @@ namespace BusinessLogic {
         // ── Deployment ───────────────────────────────────────────────────
 
         public void DeployFirefighter(Tile targetTile) {
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
             if (firefighterConfig == null || firefighterConfig.UnitPrefab == null) {
                 Debug.LogWarning("[ResourceManager] No firefighter config or prefab assigned.");
                 return;
@@ -170,6 +174,7 @@ namespace BusinessLogic {
         }
 
         public void DeployFirefighterFromCity(City deployCity) {
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
             if (deployCity == null) return;
 
             Tile targetFire = FindNearestUnassignedFireToCity(deployCity);

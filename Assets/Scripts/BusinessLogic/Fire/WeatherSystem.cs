@@ -9,12 +9,16 @@ namespace BusinessLogic {
         private Vector2 currentWindDirection;
         private float windSpeed;
         private float windTimer;
+        private GameOverManager gameOverManager;
 
         private void Start() {
+            gameOverManager = FindFirstObjectByType<GameOverManager>();
             UpdateWeatherState();
         }
 
         private void Update() {
+            if (gameOverManager != null && gameOverManager.IsGameOver) return;
+
             windTimer += Time.deltaTime;
             if (windTimer >= windChangeInterval) {
                 windTimer = 0f;

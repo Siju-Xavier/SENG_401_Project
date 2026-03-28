@@ -1,5 +1,6 @@
 namespace Presentation
 {
+    using System.Collections;
     using UnityEngine;
     using UnityEngine.UI;
     using TMPro;
@@ -18,47 +19,256 @@ namespace Presentation
         [Header("Buttons")]
         [SerializeField] private Button backButton;
 
+        private SaveManager saveManager;
+
         private void OnEnable()
         {
+            saveManager = FindFirstObjectByType<SaveManager>();
             PopulateLocalSaves();
             PopulateOnlineSaves();
         }
 
+        // ── Local Saves ─────────────────────────────────────────────────
+
         private void PopulateLocalSaves()
         {
-            // Clear existing entries (skip the no-saves text)
-            if (localSavesContent != null)
-            {
-                for (int i = localSavesContent.childCount - 1; i >= 0; i--)
-                    Destroy(localSavesContent.GetChild(i).gameObject);
-            }
+            ClearChildren(localSavesContent);
 
-            if (LocalFileProvider.HasLocalSave())
-            {
-                if (localNoSavesText != null) localNoSavesText.SetActive(false);
+            var slots = LocalFileProvider.GetSaveSlots();
 
-                // Show one entry for the local save
-                string savePath = LocalFileProvider.SaveFilePath;
-                string lastModified = System.IO.File.GetLastWriteTime(savePath).ToString("yyyy-MM-dd HH:mm");
-                CreateSaveEntry(localSavesContent, "Local Save", lastModified, () => OnLoadLocal());
-            }
-            else
+            // Also check the legacy single save file
+            bool hasLegacy = System.IO.File.Exists(LocalFileProvider.SaveFilePath);
+
+            if (slots.Length == 0 && !hasLegacy)
             {
                 if (localNoSavesText != null) localNoSavesText.SetActive(true);
+                return;
+            }
+
+            if (localNoSavesText != null) localNoSavesText.SetActive(false);
+
+            // Show named save slots (newest first — already sorted)
+            foreach (var filePath in slots)
+            {
+                // Try to read the save name from the JSON
+                string displayName = GetSaveNameFromFile(filePath);
+                string lastModified = System.IO.File.GetLastWriteTime(filePath).ToString("yyyy-MM-dd HH:mm");
+                string path = filePath; // capture for closure
+                CreateSaveEntry(localSavesContent, displayName, lastModified, () => OnLoadLocalSlot(path));
+            }
+
+            // Show legacy single save if it exists and no slots found
+            if (hasLegacy && slots.Length == 0)
+            {
+                string lastModified = System.IO.File.GetLastWriteTime(LocalFileProvider.SaveFilePath).ToString("yyyy-MM-dd HH:mm");
+                CreateSaveEntry(localSavesContent, "Local Save", lastModified, () => OnLoadLocal());
             }
         }
 
+        private string GetSaveNameFromFile(string filePath)
+        {
+            try
+            {
+                string json = System.IO.File.ReadAllText(filePath);
+                var data = JsonUtility.FromJson<SaveManager.GameSaveData>(json);
+                if (data != null && !string.IsNullOrEmpty(data.saveName))
+                    return data.saveName;
+            }
+            catch { }
+
+            // Fallback to filename without extension
+            return System.IO.Path.GetFileNameWithoutExtension(filePath);
+        }
+
+        private void OnLoadLocalSlot(string filePath)
+        {
+            Debug.Log($"[LoadPanel] Loading local slot: {filePath}");
+            var sm = FindFirstObjectByType<SaveManager>();
+            if (sm != null)
+            {
+                var data = sm.LoadLocalSlot(filePath);
+                if (data != null)
+                {
+                    SaveManager.PendingLoadData = data;
+                    MainMenuManager.ShouldLoadSave = true;
+                    SceneLoader.LoadScene("Game 1");
+                    return;
+                }
+            }
+            Debug.LogWarning("[LoadPanel] Failed to load local slot.");
+        }
+
+        private void OnLoadLocal()
+        {
+            Debug.Log("[LoadPanel] Loading legacy local save...");
+            MainMenuManager.ShouldLoadSave = true;
+            SceneLoader.LoadScene("Game 1");
+        }
+
+        // ── Cloud Saves ─────────────────────────────────────────────────
+
         private void PopulateOnlineSaves()
         {
-            // Clear existing entries
-            if (onlineSavesContent != null)
+            ClearChildren(onlineSavesContent);
+
+            var db = DatabaseProvider.Instance;
+            if (db == null || !db.IsConfigured)
             {
-                for (int i = onlineSavesContent.childCount - 1; i >= 0; i--)
-                    Destroy(onlineSavesContent.GetChild(i).gameObject);
+                if (onlineNoSavesText != null) onlineNoSavesText.SetActive(true);
+                return;
             }
 
-            // Online saves: stub for now
-            if (onlineNoSavesText != null) onlineNoSavesText.SetActive(true);
+            // Show loading state
+            if (onlineNoSavesText != null)
+            {
+                var tmp = onlineNoSavesText.GetComponent<TextMeshProUGUI>();
+                if (tmp != null) tmp.text = "Loading cloud saves...";
+                onlineNoSavesText.SetActive(true);
+            }
+
+            StartCoroutine(FetchCloudSaves(db));
+        }
+
+        private IEnumerator FetchCloudSaves(DatabaseProvider db)
+        {
+            string rawJson = null;
+            yield return db.LoadAllSaves(db.ActivePlayerId, json => rawJson = json);
+
+            ClearChildren(onlineSavesContent);
+
+            if (string.IsNullOrEmpty(rawJson) || rawJson == "[]")
+            {
+                if (onlineNoSavesText != null)
+                {
+                    var tmp = onlineNoSavesText.GetComponent<TextMeshProUGUI>();
+                    if (tmp != null) tmp.text = "No cloud saves found.";
+                    onlineNoSavesText.SetActive(true);
+                }
+                yield break;
+            }
+
+            if (onlineNoSavesText != null) onlineNoSavesText.SetActive(false);
+
+            // Parse the array of save records from Supabase
+            var saves = ParseCloudSaves(rawJson);
+            foreach (var save in saves)
+            {
+                string gameState = save.gameState;
+                CreateSaveEntry(onlineSavesContent, save.displayName, save.savedAt, () => OnLoadCloud(gameState));
+            }
+        }
+
+        private struct CloudSaveInfo
+        {
+            public string displayName;
+            public string savedAt;
+            public string gameState;
+        }
+
+        private System.Collections.Generic.List<CloudSaveInfo> ParseCloudSaves(string jsonArray)
+        {
+            var results = new System.Collections.Generic.List<CloudSaveInfo>();
+
+            // Simple JSON array parsing (Supabase returns [{...}, {...}])
+            // Each object has: save_display_name, saved_at, game_state
+            try
+            {
+                // Strip outer brackets
+                jsonArray = jsonArray.Trim();
+                if (jsonArray.StartsWith("[")) jsonArray = jsonArray.Substring(1);
+                if (jsonArray.EndsWith("]")) jsonArray = jsonArray.Substring(0, jsonArray.Length - 1);
+
+                // Split by objects — find each { ... } block
+                int depth = 0;
+                int start = -1;
+                for (int i = 0; i < jsonArray.Length; i++)
+                {
+                    if (jsonArray[i] == '{') { if (depth == 0) start = i; depth++; }
+                    else if (jsonArray[i] == '}')
+                    {
+                        depth--;
+                        if (depth == 0 && start >= 0)
+                        {
+                            string obj = jsonArray.Substring(start, i - start + 1);
+                            var info = new CloudSaveInfo
+                            {
+                                displayName = ExtractJsonString(obj, "save_display_name"),
+                                savedAt = ExtractJsonString(obj, "saved_at"),
+                                gameState = ExtractJsonObject(obj, "game_state")
+                            };
+                            if (string.IsNullOrEmpty(info.displayName))
+                                info.displayName = $"Cloud Save";
+                            if (!string.IsNullOrEmpty(info.savedAt) && info.savedAt.Length > 16)
+                                info.savedAt = info.savedAt.Substring(0, 16).Replace("T", " ");
+                            results.Add(info);
+                            start = -1;
+                        }
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[LoadPanel] Failed to parse cloud saves: {e.Message}");
+            }
+
+            return results;
+        }
+
+        private string ExtractJsonString(string json, string key)
+        {
+            string search = $"\"{key}\":\"";
+            int idx = json.IndexOf(search);
+            if (idx < 0) return "";
+            int start = idx + search.Length;
+            int end = json.IndexOf("\"", start);
+            return end > start ? json.Substring(start, end - start) : "";
+        }
+
+        private string ExtractJsonObject(string json, string key)
+        {
+            string search = $"\"{key}\":";
+            int idx = json.IndexOf(search);
+            if (idx < 0) return "";
+            int start = idx + search.Length;
+            // Find the matching closing brace
+            int depth = 0;
+            for (int i = start; i < json.Length; i++)
+            {
+                if (json[i] == '{') depth++;
+                else if (json[i] == '}')
+                {
+                    depth--;
+                    if (depth == 0) return json.Substring(start, i - start + 1);
+                }
+            }
+            return "";
+        }
+
+        private void OnLoadCloud(string gameStateJson)
+        {
+            Debug.Log("[LoadPanel] Loading cloud save...");
+            var sm = FindFirstObjectByType<SaveManager>();
+            if (sm != null && !string.IsNullOrEmpty(gameStateJson))
+            {
+                var data = sm.Deserialize(gameStateJson);
+                if (data != null)
+                {
+                    SaveManager.PendingLoadData = data;
+                    MainMenuManager.ShouldLoadSave = true;
+                    SceneLoader.LoadScene("Game 1");
+                    return;
+                }
+            }
+            Debug.LogWarning("[LoadPanel] Failed to load cloud save.");
+        }
+
+        // ── UI Helpers ──────────────────────────────────────────────────
+
+        private void ClearChildren(Transform parent)
+        {
+            if (parent == null) return;
+            for (int i = parent.childCount - 1; i >= 0; i--)
+                Destroy(parent.GetChild(i).gameObject);
         }
 
         private void CreateSaveEntry(Transform parent, string saveName, string dateText, System.Action onLoad)
@@ -133,13 +343,6 @@ namespace Presentation
             btnTextRect.anchorMax = Vector2.one;
             btnTextRect.offsetMin = Vector2.zero;
             btnTextRect.offsetMax = Vector2.zero;
-        }
-
-        private void OnLoadLocal()
-        {
-            Debug.Log("[LoadPanel] Loading local save...");
-            MainMenuManager.ShouldLoadSave = true;
-            SceneLoader.LoadScene("Game 1");
         }
     }
 }

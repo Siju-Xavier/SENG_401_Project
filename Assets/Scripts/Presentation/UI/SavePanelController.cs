@@ -38,19 +38,23 @@ namespace Presentation
         private void OnOnlineSave()
         {
             if (saveManager == null) return;
-            string saveName = onlineSaveNameInput != null ? onlineSaveNameInput.text : "CloudSave";
+            string saveName = onlineSaveNameInput != null && !string.IsNullOrWhiteSpace(onlineSaveNameInput.text)
+                ? onlineSaveNameInput.text.Trim()
+                : "";
             Debug.Log($"[SavePanel] Online save as: {saveName}");
             saveManager.SetStorageMode(StorageMode.Cloud);
-            saveManager.SaveFile();
+            saveManager.SaveFile(saveName);
         }
 
         private void OnLocalSave()
         {
             if (saveManager == null) return;
-            string saveName = localSaveNameInput != null ? localSaveNameInput.text : "LocalSave";
+            string saveName = localSaveNameInput != null && !string.IsNullOrWhiteSpace(localSaveNameInput.text)
+                ? localSaveNameInput.text.Trim()
+                : "";
             Debug.Log($"[SavePanel] Local save as: {saveName}");
             saveManager.SetStorageMode(StorageMode.Local);
-            saveManager.SaveFile();
+            saveManager.SaveFile(saveName);
         }
     }
 }

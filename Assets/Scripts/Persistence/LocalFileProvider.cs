@@ -82,6 +82,68 @@ namespace Persistence
         }
 
         /// <summary>Check whether a local save file exists (for menu button state).</summary>
-        public static bool HasLocalSave() => System.IO.File.Exists(SaveFilePath);
+        public static bool HasLocalSave() => System.IO.File.Exists(SaveFilePath) || GetSaveSlots().Length > 0;
+
+        // ── Multi-slot support ──────────────────────────────────────────
+
+        private static string SavesDirectory =>
+            System.IO.Path.Combine(Application.persistentDataPath, "saves");
+
+        /// <summary>Store a named save slot as a separate file.</summary>
+        public static void StoreSlot(string slotName, string json)
+        {
+            try
+            {
+                var dir = SavesDirectory;
+                if (!System.IO.Directory.Exists(dir))
+                    System.IO.Directory.CreateDirectory(dir);
+
+                // Sanitize the slot name for use as a filename
+                string safeName = SanitizeFileName(slotName);
+                string path = System.IO.Path.Combine(dir, safeName + ".json");
+                System.IO.File.WriteAllText(path, json);
+                Debug.Log($"[LocalFile] Saved slot '{slotName}' to {path}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[LocalFile] Slot save failed: {e.Message}");
+            }
+        }
+
+        /// <summary>Load a save slot from a specific file path.</summary>
+        public static string LoadSlot(string filePath)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(filePath)) return string.Empty;
+                return System.IO.File.ReadAllText(filePath);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[LocalFile] Slot load failed: {e.Message}");
+                return string.Empty;
+            }
+        }
+
+        /// <summary>Get all local save slot file paths, newest first.</summary>
+        public static string[] GetSaveSlots()
+        {
+            var dir = SavesDirectory;
+            if (!System.IO.Directory.Exists(dir))
+                return new string[0];
+
+            var files = System.IO.Directory.GetFiles(dir, "*.json");
+            // Sort newest first
+            System.Array.Sort(files, (a, b) =>
+                System.IO.File.GetLastWriteTime(b).CompareTo(System.IO.File.GetLastWriteTime(a)));
+            return files;
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            foreach (char c in System.IO.Path.GetInvalidFileNameChars())
+                name = name.Replace(c, '_');
+            return name;
+        }
     }
 }

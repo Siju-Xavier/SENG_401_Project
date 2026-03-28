@@ -50,6 +50,7 @@ namespace Persistence
 
         /// <summary>Set the player ID for cloud operations.</summary>
         public void SetPlayerId(int id) => _activePlayerId = id;
+        public int ActivePlayerId => _activePlayerId;
 
         private void Awake()
         {
@@ -98,13 +99,28 @@ namespace Persistence
                 StartCoroutine(BackgroundUpload(data));
         }
 
+        private string _pendingDisplayName = "";
+
+        /// <summary>Store with a custom display name for the save slot.</summary>
+        public void StoreWithName(string data, string displayName)
+        {
+            _cachedData = data;
+            _pendingDisplayName = displayName;
+            if (IsConfigured)
+                StartCoroutine(BackgroundUpload(data));
+        }
+
         private IEnumerator BackgroundUpload(string gameStateJson)
         {
+            string slotName = $"save_{System.DateTime.Now:yyyyMMdd_HHmmss}";
+            string displayName = _pendingDisplayName;
+            _pendingDisplayName = "";
+
             yield return SaveGame(_activePlayerId, gameStateJson, ok =>
             {
-                if (ok) Debug.Log("[DB] Background cloud upload succeeded.");
+                if (ok) Debug.Log($"[DB] Background cloud upload succeeded (slot={slotName}, name={displayName}).");
                 else    Debug.LogWarning("[DB] Background cloud upload failed.");
-            });
+            }, slotName: slotName, displayName: displayName);
         }
 
         /// <summary>

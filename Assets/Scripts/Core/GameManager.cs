@@ -53,10 +53,18 @@ namespace Core {
             EventBroker.Instance.Subscribe(Core.EventType.GameEnded, EndGame);
             EventBroker.Instance.Subscribe(Core.EventType.FireStarted, OnFireStarted);
 
-            // Check if we were asked to restore a save (from MainMenuManager.ContinueGame)
-            if (Presentation.MainMenuManager.ShouldLoadSave && saveManager != null) {
-                Debug.Log("[GameManager] ShouldLoadSave flag set — loading via active provider.");
-                var save = saveManager.LoadFile();
+            // Check if we were asked to restore a save
+            if (Presentation.MainMenuManager.ShouldLoadSave) {
+                // Check for pending data from a specific slot load first
+                SaveManager.GameSaveData save = SaveManager.PendingLoadData;
+                SaveManager.PendingLoadData = null;
+
+                // Fall back to the default provider load
+                if (save == null && saveManager != null)
+                    save = saveManager.LoadFile();
+
+                Debug.Log("[GameManager] ShouldLoadSave flag set — restoring game.");
+                Presentation.MainMenuManager.ShouldLoadSave = false;
                 LoadGame(save);
             } else {
                 StartGame();

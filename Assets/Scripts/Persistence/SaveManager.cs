@@ -43,6 +43,8 @@ namespace Persistence
         [Serializable]
         public class GameSaveData
         {
+            public string saveName;
+            public string savedAt;
             public int currentTick;
             public int currentRound;
             public float roundTimer;
@@ -215,7 +217,7 @@ namespace Persistence
         /// Save game state through the active IStorageProvider.
         /// Works identically for local and cloud — the provider handles it.
         /// </summary>
-        public void SaveFile()
+        public void SaveFile(string saveName = "")
         {
             var gameManager = FindObjectOfType<Core.GameManager>();
             if (gameManager == null)
@@ -225,9 +227,30 @@ namespace Persistence
             }
 
             GameSaveData data = gameManager.BuildSaveData();
+            data.saveName = string.IsNullOrEmpty(saveName) ? $"Save {System.DateTime.Now:MMM dd HH:mm}" : saveName;
+            data.savedAt = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
             string json = Serialize(data);
-            storage.Store(json);
-            Debug.Log($"[SaveManager] Game saved via {storageMode} provider.");
+
+            if (storageMode == StorageMode.Local)
+            {
+                // Local: save to a named slot file
+                LocalFileProvider.StoreSlot(data.saveName, json);
+            }
+            else
+            {
+                // Cloud: pass display name through to DatabaseProvider
+                if (cloudProvider != null && cloudProvider.IsConfigured)
+                {
+                    cloudProvider.StoreWithName(json, data.saveName);
+                }
+                else
+                {
+                    storage.Store(json);
+                }
+            }
+
+            Debug.Log($"[SaveManager] Game saved as '{data.saveName}' via {storageMode} provider.");
         }
 
         /// <summary>
@@ -246,6 +269,21 @@ namespace Persistence
             Debug.LogWarning("[SaveManager] No save data found.");
             return null;
         }
+
+        /// <summary>Load a specific local save slot by file path.</summary>
+        public GameSaveData LoadLocalSlot(string filePath)
+        {
+            string json = LocalFileProvider.LoadSlot(filePath);
+            if (!string.IsNullOrEmpty(json))
+            {
+                Debug.Log($"[SaveManager] Loaded local slot: {filePath}");
+                return Deserialize(json);
+            }
+            return null;
+        }
+
+        /// <summary>Set the data to load from (used by cloud save loading).</summary>
+        public static GameSaveData PendingLoadData { get; set; }
 
         /// <summary>
         /// Transfer save data between providers (local ↔ cloud).

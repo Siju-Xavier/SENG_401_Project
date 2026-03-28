@@ -155,7 +155,7 @@ namespace Presentation
         public void GoToMainMenu()
         {
             Time.timeScale = 1f;
-            SceneLoader.LoadScene("MainMenu");
+            SceneLoader.LoadScene("Login");
         }
 
         private void SetPaused(bool paused)

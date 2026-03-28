@@ -44,8 +44,32 @@ namespace Presentation
                 citiesDropdown.value = 0;
             }
 
+            // Ensure dropdown lists render on top of buttons below them
+            EnsureDropdownRendersOnTop(mapSizeDropdown);
+            EnsureDropdownRendersOnTop(citiesDropdown);
+
             if (startButton != null)
                 startButton.onClick.AddListener(OnStart);
+        }
+
+        private void EnsureDropdownRendersOnTop(TMP_Dropdown dropdown)
+        {
+            if (dropdown == null) return;
+            // The dropdown template is the list that appears when expanded.
+            // Adding an override Canvas with a higher sort order ensures it
+            // renders above sibling UI elements like the START/BACK buttons.
+            var template = dropdown.template;
+            if (template != null)
+            {
+                var canvas = template.GetComponent<Canvas>();
+                if (canvas == null) canvas = template.gameObject.AddComponent<Canvas>();
+                canvas.overrideSorting = true;
+                canvas.sortingOrder = 100;
+
+                // GraphicRaycaster is needed for clicks to register on the dropdown items
+                if (template.GetComponent<UnityEngine.UI.GraphicRaycaster>() == null)
+                    template.gameObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            }
         }
 
         private void OnDisable()

@@ -20,6 +20,52 @@ namespace Presentation
             cam = Camera.main;
         }
 
+        private void Start()
+        {
+            // Center camera on the map once it generates
+            StartCoroutine(CenterOnMapWhenReady());
+        }
+
+        private System.Collections.IEnumerator CenterOnMapWhenReady()
+        {
+            // Wait for MapGenerationOrchestrator to finish
+            var orch = FindFirstObjectByType<Core.MapGenerationOrchestrator>();
+            while (orch == null || orch.GridSystem == null)
+            {
+                yield return null;
+                if (orch == null) orch = FindFirstObjectByType<Core.MapGenerationOrchestrator>();
+            }
+
+            CenterOnMap(orch.GridSystem.Width, orch.GridSystem.Height);
+        }
+
+        /// <summary>
+        /// Position the camera target at the center of the isometric map
+        /// and set zoom to fit the whole map.
+        /// </summary>
+        public void CenterOnMap(int mapWidth, int mapHeight)
+        {
+            // Find the ground tilemap to convert grid coords to world coords
+            var tilemap = FindFirstObjectByType<UnityEngine.Tilemaps.Tilemap>();
+            if (tilemap == null) return;
+
+            // Center tile in grid space
+            var centerCell = new Vector3Int(mapWidth / 2, mapHeight / 2, 0);
+            Vector3 worldCenter = tilemap.CellToWorld(centerCell) + tilemap.cellSize * 0.5f;
+
+            transform.position = new Vector3(worldCenter.x, worldCenter.y, transform.position.z);
+
+            // Zoom out to fit the map — estimate based on map size
+            if (cam != null)
+            {
+                // For isometric, the visible area scales with orthographic size
+                float targetSize = Mathf.Max(mapWidth, mapHeight) * 0.3f;
+                cam.orthographicSize = Mathf.Clamp(targetSize, minZoom, maxZoom);
+            }
+
+            Debug.Log($"[Camera] Centered on map ({mapWidth}x{mapHeight}) at world pos {worldCenter}");
+        }
+
         private void Update()
         {
             HandleMovement();

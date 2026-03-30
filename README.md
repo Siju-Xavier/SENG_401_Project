@@ -1,7 +1,7 @@
 # Fire Rescue
 
 ## Overview
-The **Wildfire Management & Collaboration Simulator** is a strategic simulation game developed as part of the SENG 401 course (Winter 2026). Players take on the role of municipal managers tasked with protecting their communities from dynamically spreading wildfires in a fictional region.
+The **Fire Rescue** is a strategic simulation game developed as part of the SENG 401 course (Winter 2026). Players take on the role of municipal managers tasked with protecting their communities from dynamically spreading wildfires in a fictional region.
 
 The game challenges players to make high-stakes decisions under time pressure, manage limited resources (budgets, firefighters, equipment), and plan collaboratively with neighboring towns to prevent cascading failures. It is designed to be family-friendly and educational, teaching systems thinking and environmental awareness.
 
